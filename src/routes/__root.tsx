@@ -149,6 +149,7 @@ function RootComponent() {
 
 function Header() {
   const [user, setUser] = useState<User | null>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
