@@ -170,21 +170,21 @@ function Header() {
           {user ? (
             <>
               <Link
-                to="/dashboard"
+                to="/app"
                 activeProps={{ className: "font-medium text-foreground" }}
                 className="text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 Dashboard
               </Link>
               <Link
-                to="/patients"
+                to="/app/patients"
                 activeProps={{ className: "font-medium text-foreground" }}
                 className="text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 Pacientes
               </Link>
               <Link
-                to="/foods"
+                to="/app/foods"
                 activeProps={{ className: "font-medium text-foreground" }}
                 className="text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
