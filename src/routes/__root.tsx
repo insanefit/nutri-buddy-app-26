@@ -151,15 +151,19 @@ function RootComponent() {
 
 function Header() {
   const [user, setUser] = useState<User | null>(null);
+  const [mounted, setMounted] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    setMounted(true);
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  const activeProps = mounted ? { className: "font-medium text-foreground" } : undefined;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -173,21 +177,21 @@ function Header() {
             <>
               <Link
                 to="/app"
-                activeProps={{ className: "font-medium text-foreground" }}
+                activeProps={activeProps}
                 className="text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 Dashboard
               </Link>
               <Link
                 to="/app/patients"
-                activeProps={{ className: "font-medium text-foreground" }}
+                activeProps={activeProps}
                 className="text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 Pacientes
               </Link>
               <Link
                 to="/app/foods"
-                activeProps={{ className: "font-medium text-foreground" }}
+                activeProps={activeProps}
                 className="text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 Alimentos
@@ -206,6 +210,7 @@ function Header() {
           ) : (
             <Link
               to="/auth"
+              activeProps={activeProps}
               className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Entrar
