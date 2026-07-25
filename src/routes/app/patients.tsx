@@ -40,7 +40,7 @@ function PatientsPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await createPatient({ data: { fullName: name, email } });
+      await createPatient({ data: { patient_email: email, full_name: name } });
       toast.success("Paciente cadastrado com sucesso");
       setName("");
       setEmail("");
@@ -103,12 +103,11 @@ function PatientsPage() {
           <Card key={patient.id} className="transition-shadow hover:shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-medium">
-                {patient.profiles?.full_name || "Paciente"}
+                {patient.patient?.full_name || "Paciente"}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">{patient.email}</p>
-              <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
+              <Button variant="outline" size="sm" className="mt-2 w-full" asChild>
                 <Link to="/app/patients/$id" params={{ id: patient.id }}>
                   Ver diário
                 </Link>

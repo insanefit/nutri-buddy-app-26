@@ -67,8 +67,9 @@ function DashboardPage() {
               {patients.slice(0, 5).map((patient) => (
                 <li key={patient.id} className="flex items-center justify-between py-3">
                   <div>
-                    <p className="font-medium text-foreground">{patient.profiles?.full_name || patient.email}</p>
-                    <p className="text-sm text-muted-foreground">{patient.email}</p>
+                    <p className="font-medium text-foreground">
+                      {patient.patient?.full_name || "Paciente"}
+                    </p>
                   </div>
                   <Button variant="ghost" size="sm" asChild>
                     <Link to="/app/patients/$id" params={{ id: patient.id }}>

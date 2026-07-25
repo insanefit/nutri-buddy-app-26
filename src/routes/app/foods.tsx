@@ -33,7 +33,6 @@ function FoodsPage() {
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [baseQuantity, setBaseQuantity] = useState("100");
   const [calories, setCalories] = useState("");
   const [protein, setProtein] = useState("");
   const [carbs, setCarbs] = useState("");
@@ -47,16 +46,14 @@ function FoodsPage() {
       await createFood({
         data: {
           name,
-          baseQuantityG: Number(baseQuantity),
-          calories: Number(calories),
-          protein: Number(protein),
-          carbohydrates: Number(carbs),
-          fat: Number(fat),
+          calories_per_100g: Number(calories),
+          protein_per_100g: Number(protein),
+          carbs_per_100g: Number(carbs),
+          fat_per_100g: Number(fat),
         },
       });
       toast.success("Alimento cadastrado");
       setName("");
-      setBaseQuantity("100");
       setCalories("");
       setProtein("");
       setCarbs("");
@@ -90,10 +87,7 @@ function FoodsPage() {
                 <Label htmlFor="name">Nome</Label>
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Arroz branco cozido" required />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="baseQuantity">Quantidade base (g)</Label>
-                <Input id="baseQuantity" type="number" min={1} value={baseQuantity} onChange={(e) => setBaseQuantity(e.target.value)} required />
-              </div>
+              <p className="text-xs text-muted-foreground">Valores nutricionais por 100g</p>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="calories">Kcal</Label>
@@ -127,23 +121,23 @@ function FoodsPage() {
               <CardTitle className="text-base font-medium">{food.name}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Por {food.base_quantity_g}g</p>
+              <p className="text-sm text-muted-foreground">Por 100g</p>
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                 <div>
                   <span className="text-muted-foreground">Kcal</span>
-                  <p className="font-medium text-foreground">{food.calories}</p>
+                  <p className="font-medium text-foreground">{food.calories_per_100g}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Proteína</span>
-                  <p className="font-medium text-foreground">{food.protein}g</p>
+                  <p className="font-medium text-foreground">{food.protein_per_100g}g</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Carbo</span>
-                  <p className="font-medium text-foreground">{food.carbohydrates}g</p>
+                  <p className="font-medium text-foreground">{food.carbs_per_100g}g</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Gordura</span>
-                  <p className="font-medium text-foreground">{food.fat}g</p>
+                  <p className="font-medium text-foreground">{food.fat_per_100g}g</p>
                 </div>
               </div>
             </CardContent>
