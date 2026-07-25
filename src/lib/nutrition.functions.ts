@@ -87,7 +87,9 @@ export const createPatient = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => patientSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { data: userData, error: userError } = await context.supabase.auth.admin.listUsers();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
     if (userError) throw userError;
 
     const existing = userData.users.find((u) => u.email === data.patient_email);
@@ -96,7 +98,6 @@ export const createPatient = createServerFn({ method: "POST" })
     if (existing) {
       patientId = existing.id;
     } else {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: data.patient_email,
         email_confirm: true,
@@ -104,13 +105,13 @@ export const createPatient = createServerFn({ method: "POST" })
       });
       if (createError) throw createError;
       patientId = newUser.user!.id;
-
-      await supabaseAdmin.from("profiles").upsert({
-        id: patientId,
-        role: "patient",
-        full_name: data.full_name || data.patient_email.split("@")[0],
-      });
     }
+
+    await supabaseAdmin.from("profiles").upsert({
+      id: patientId,
+      role: "patient",
+      full_name: data.full_name || data.patient_email.split("@")[0],
+    });
 
     const { error } = await context.supabase.from("patients").insert({
       nutritionist_id: context.userId,
