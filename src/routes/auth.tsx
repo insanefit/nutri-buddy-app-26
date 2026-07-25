@@ -69,7 +69,13 @@ function AuthPage() {
           <CardDescription>Entre com sua conta para continuar</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue={mode} className="w-full">
+          <Tabs
+            value={mode}
+            onValueChange={(value) =>
+              navigate({ to: "/auth", search: { mode: value as "signin" | "signup" } })
+            }
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Entrar</TabsTrigger>
               <TabsTrigger value="signup">Criar conta</TabsTrigger>
