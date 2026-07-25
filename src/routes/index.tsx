@@ -27,6 +27,7 @@ function HomePage() {
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               to="/auth"
+              search={{ mode: "signin" }}
               className="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Começar agora
