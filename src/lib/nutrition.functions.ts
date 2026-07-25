@@ -180,12 +180,16 @@ export const createMeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => mealSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("meals").insert({
-      ...data,
-      nutritionist_id: context.userId,
-    });
+    const { data: meal, error } = await context.supabase
+      .from("meals")
+      .insert({
+        ...data,
+        nutritionist_id: context.userId,
+      })
+      .select("id")
+      .single();
     if (error) throw error;
-    return { ok: true };
+    return meal;
   });
 
 export const addMealItem = createServerFn({ method: "POST" })
