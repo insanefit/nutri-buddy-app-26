@@ -103,7 +103,7 @@ function PatientsPage() {
           <Card key={patient.id} className="transition-shadow hover:shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-medium">
-                {patient.patient?.full_name || "Paciente"}
+                {(patient.patient as any)?.full_name || "Paciente"}
               </CardTitle>
             </CardHeader>
             <CardContent>

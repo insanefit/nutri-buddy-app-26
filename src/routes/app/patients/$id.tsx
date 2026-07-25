@@ -136,7 +136,7 @@ function PatientDetailPage() {
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8">
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-          {patient?.patient?.full_name || "Paciente"}
+          {(patient?.patient as any)?.full_name || "Paciente"}
         </h1>
       </div>
 
