@@ -14,7 +14,189 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      foods: {
+        Row: {
+          calories_per_100g: number
+          carbs_per_100g: number
+          created_at: string
+          created_by: string | null
+          fat_per_100g: number
+          id: string
+          is_custom: boolean
+          name: string
+          protein_per_100g: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          calories_per_100g?: number
+          carbs_per_100g?: number
+          created_at?: string
+          created_by?: string | null
+          fat_per_100g?: number
+          id?: string
+          is_custom?: boolean
+          name: string
+          protein_per_100g?: number
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          calories_per_100g?: number
+          carbs_per_100g?: number
+          created_at?: string
+          created_by?: string | null
+          fat_per_100g?: number
+          id?: string
+          is_custom?: boolean
+          name?: string
+          protein_per_100g?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      meal_items: {
+        Row: {
+          calculated_calories: number
+          calculated_carbs: number
+          calculated_fat: number
+          calculated_protein: number
+          created_at: string
+          food_id: string
+          id: string
+          meal_id: string
+          quantity_grams: number
+          updated_at: string
+        }
+        Insert: {
+          calculated_calories?: number
+          calculated_carbs?: number
+          calculated_fat?: number
+          calculated_protein?: number
+          created_at?: string
+          food_id: string
+          id?: string
+          meal_id: string
+          quantity_grams?: number
+          updated_at?: string
+        }
+        Update: {
+          calculated_calories?: number
+          calculated_carbs?: number
+          calculated_fat?: number
+          calculated_protein?: number
+          created_at?: string
+          food_id?: string
+          id?: string
+          meal_id?: string
+          quantity_grams?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_items_food_id_fkey"
+            columns: ["food_id"]
+            isOneToOne: false
+            referencedRelation: "foods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_items_meal_id_fkey"
+            columns: ["meal_id"]
+            isOneToOne: false
+            referencedRelation: "meals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meals: {
+        Row: {
+          created_at: string
+          id: string
+          meal_date: string
+          name: string
+          nutritionist_id: string
+          patient_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meal_date?: string
+          name: string
+          nutritionist_id: string
+          patient_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meal_date?: string
+          name?: string
+          nutritionist_id?: string
+          patient_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      patients: {
+        Row: {
+          created_at: string
+          daily_calorie_goal: number | null
+          id: string
+          notes: string | null
+          nutritionist_id: string
+          patient_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          daily_calorie_goal?: number | null
+          id?: string
+          notes?: string | null
+          nutritionist_id: string
+          patient_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          daily_calorie_goal?: number | null
+          id?: string
+          notes?: string | null
+          nutritionist_id?: string
+          patient_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +205,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      app_role: "nutritionist" | "patient"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +332,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["nutritionist", "patient"],
+    },
   },
 } as const
