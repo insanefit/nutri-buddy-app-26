@@ -11,6 +11,7 @@ const profileSchema = z.object({
 
 const patientSchema = z.object({
   patient_email: z.string().email(),
+  full_name: z.string().min(1).max(120).optional(),
   daily_calorie_goal: z.number().int().min(500).max(10000).optional(),
   notes: z.string().max(2000).optional(),
 });
