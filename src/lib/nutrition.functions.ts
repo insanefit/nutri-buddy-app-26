@@ -108,7 +108,7 @@ export const createPatient = createServerFn({ method: "POST" })
       await supabaseAdmin.from("profiles").upsert({
         id: patientId,
         role: "patient",
-        full_name: data.patient_email.split("@")[0],
+        full_name: data.full_name || data.patient_email.split("@")[0],
       });
     }
 
