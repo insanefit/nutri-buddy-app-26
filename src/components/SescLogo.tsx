@@ -1,4 +1,4 @@
-import sescLogoUrl from "@/assets/sesc-logo-official.png";
+import sescLogoUrl from "@/assets/sesc-logo-v2.png";
 
 interface SescLogoProps {
   className?: string;
