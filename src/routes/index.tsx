@@ -5,9 +5,17 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "NutriAvalia — Avaliação nutricional para profissionais" },
-      { name: "description", content: "Acompanhe pacientes, registre diários alimentares e avalie a ingestão nutricional de forma simples e minimalista." },
+      {
+        name: "description",
+        content:
+          "Acompanhe pacientes, registre diários alimentares e avalie a ingestão nutricional de forma simples e minimalista.",
+      },
       { property: "og:title", content: "NutriAvalia — Avaliação nutricional para profissionais" },
-      { property: "og:description", content: "Acompanhe pacientes, registre diários alimentares e avalie a ingestão nutricional." },
+      {
+        property: "og:description",
+        content:
+          "Acompanhe pacientes, registre diários alimentares e avalie a ingestão nutricional.",
+      },
     ],
   }),
   component: HomePage,
@@ -22,7 +30,8 @@ function HomePage() {
             Avaliação nutricional sem complicação
           </h1>
           <p className="mt-6 text-lg leading-8 text-muted-foreground">
-            NutriAvalia ajuda nutricionistas a acompanhar pacientes, registrar diários alimentares e visualizar a ingestão de macronutrientes em um só lugar.
+            NutriAvalia ajuda nutricionistas a acompanhar pacientes, registrar diários alimentares e
+            visualizar a ingestão de macronutrientes em um só lugar.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link

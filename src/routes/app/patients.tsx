@@ -6,7 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/patients")({
@@ -58,7 +64,9 @@ function PatientsPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">Pacientes</h1>
-          <p className="mt-1 text-muted-foreground">Gerencie seus pacientes e acompanhe seus diários</p>
+          <p className="mt-1 text-muted-foreground">
+            Gerencie seus pacientes e acompanhe seus diários
+          </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -120,7 +128,9 @@ function PatientsPage() {
       {(!patients || patients.length === 0) && (
         <div className="mt-12 rounded-2xl border border-dashed border-border p-12 text-center">
           <p className="text-muted-foreground">Nenhum paciente cadastrado.</p>
-          <p className="mt-2 text-sm text-muted-foreground">Clique em "Novo paciente" para começar.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Clique em "Novo paciente" para começar.
+          </p>
         </div>
       )}
     </div>

@@ -165,7 +165,9 @@ export const createFood = createServerFn({ method: "POST" })
 export const getMealsForPatient = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { patient_id: string; date: string }) =>
-    z.object({ patient_id: z.string().uuid(), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).parse(input)
+    z
+      .object({ patient_id: z.string().uuid(), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { data: meals, error } = await context.supabase

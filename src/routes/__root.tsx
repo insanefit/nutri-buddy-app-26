@@ -80,14 +80,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "NutriAvalia" },
-      { name: "description", content: "Avaliação nutricional e acompanhamento de diários alimentares para nutricionistas e pacientes." },
-      { name: "author", content: "NutriAvalia" },
-      { property: "og:title", content: "NutriAvalia" },
-      { property: "og:description", content: "Avaliação nutricional e acompanhamento de diários alimentares." },
+      { title: "Saúde Nutricional Sesc" },
+      {
+        name: "description",
+        content:
+          "Piloto Saúde Nutricional Sesc — Atendimento clínico, prontuário e acompanhamento nutricional.",
+      },
+      { name: "author", content: "Saúde Nutricional Sesc" },
+      { property: "og:title", content: "Saúde Nutricional Sesc" },
+      { property: "og:description", content: "Atendimento clínico e acompanhamento nutricional." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@NutriAvalia" },
     ],
     links: [
       {
@@ -122,7 +124,9 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
         router.invalidate();
         if (event !== "SIGNED_OUT") {
@@ -138,7 +142,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-background font-sans antialiased">
+      <div className="min-h-screen bg-slate-50 font-sans antialiased text-slate-950">
         <Header />
         <main>
           <Outlet />
@@ -151,50 +155,61 @@ function RootComponent() {
 
 function Header() {
   const [user, setUser] = useState<User | null>(null);
-  const [mounted, setMounted] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    setMounted(true);
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  const activeProps = mounted ? { className: "font-medium text-foreground" } : undefined;
-
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b-4 border-[#FFCC00] bg-[#003366] text-white shadow-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link to="/" className="flex items-center gap-2">
-          <span className="text-xl font-semibold tracking-tight text-foreground">NutriAvalia</span>
+        <Link to="/" className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded bg-[#FFCC00] font-black text-[#003366] text-lg shadow">
+            S
+          </div>
+          <div>
+            <span className="text-lg font-bold tracking-tight text-white block leading-tight">
+              Saúde Nutricional
+            </span>
+            <span className="text-[10px] text-blue-200 uppercase tracking-widest font-semibold block">
+              Piloto Sesc — Prontuário Clínico
+            </span>
+          </div>
         </Link>
 
-        <nav className="flex items-center gap-6">
+        <nav className="flex items-center gap-2 sm:gap-4">
           {user ? (
             <>
               <Link
                 to="/app"
-                activeProps={activeProps}
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="px-3 py-1.5 text-sm font-medium text-blue-100 hover:text-white hover:bg-[#002855] rounded transition-colors"
               >
-                Dashboard
+                Início
               </Link>
               <Link
                 to="/app/patients"
-                activeProps={activeProps}
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="px-3 py-1.5 text-sm font-medium text-blue-100 hover:text-white hover:bg-[#002855] rounded transition-colors"
               >
                 Pacientes
               </Link>
               <Link
                 to="/app/foods"
-                activeProps={activeProps}
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="px-3 py-1.5 text-sm font-medium text-blue-100 hover:text-white hover:bg-[#002855] rounded transition-colors"
               >
                 Alimentos
+              </Link>
+              <Link
+                to="/app/orientations"
+                className="px-3 py-1.5 text-sm font-medium text-blue-100 hover:text-white hover:bg-[#002855] rounded transition-colors"
+              >
+                Orientações
               </Link>
               <button
                 onClick={async () => {
@@ -202,7 +217,7 @@ function Header() {
                   queryClient.clear();
                   await supabase.auth.signOut();
                 }}
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="ml-2 px-3 py-1.5 text-xs font-semibold bg-amber-400 text-slate-900 hover:bg-amber-300 rounded transition-colors shadow-sm"
               >
                 Sair
               </button>
@@ -211,10 +226,9 @@ function Header() {
             <Link
               to="/auth"
               search={{ mode: "signin" }}
-              activeProps={activeProps}
-              className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              className="inline-flex items-center justify-center rounded bg-[#FFCC00] px-4 py-1.5 text-sm font-bold text-[#003366] transition-colors hover:bg-amber-300 shadow"
             >
-              Entrar
+              Entrar no Sistema
             </Link>
           )}
         </nav>

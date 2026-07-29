@@ -68,7 +68,7 @@ function DashboardPage() {
                 <li key={patient.id} className="flex items-center justify-between py-3">
                   <div>
                     <p className="font-medium text-foreground">
-                    {(patient.patient as any)?.full_name || "Paciente"}
+                      {(patient.patient as any)?.full_name || "Paciente"}
                     </p>
                   </div>
                   <Button variant="ghost" size="sm" asChild>

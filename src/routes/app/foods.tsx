@@ -6,7 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/foods")({
@@ -85,25 +91,63 @@ function FoodsPage() {
             <form onSubmit={handleSubmit} className="space-y-4 pt-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Arroz branco cozido" required />
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Arroz branco cozido"
+                  required
+                />
               </div>
               <p className="text-xs text-muted-foreground">Valores nutricionais por 100g</p>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="calories">Kcal</Label>
-                  <Input id="calories" type="number" min={0} step={0.1} value={calories} onChange={(e) => setCalories(e.target.value)} required />
+                  <Input
+                    id="calories"
+                    type="number"
+                    min={0}
+                    step={0.1}
+                    value={calories}
+                    onChange={(e) => setCalories(e.target.value)}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="protein">Proteína (g)</Label>
-                  <Input id="protein" type="number" min={0} step={0.1} value={protein} onChange={(e) => setProtein(e.target.value)} required />
+                  <Input
+                    id="protein"
+                    type="number"
+                    min={0}
+                    step={0.1}
+                    value={protein}
+                    onChange={(e) => setProtein(e.target.value)}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="carbs">Carbo (g)</Label>
-                  <Input id="carbs" type="number" min={0} step={0.1} value={carbs} onChange={(e) => setCarbs(e.target.value)} required />
+                  <Input
+                    id="carbs"
+                    type="number"
+                    min={0}
+                    step={0.1}
+                    value={carbs}
+                    onChange={(e) => setCarbs(e.target.value)}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="fat">Gordura (g)</Label>
-                  <Input id="fat" type="number" min={0} step={0.1} value={fat} onChange={(e) => setFat(e.target.value)} required />
+                  <Input
+                    id="fat"
+                    type="number"
+                    min={0}
+                    step={0.1}
+                    value={fat}
+                    onChange={(e) => setFat(e.target.value)}
+                    required
+                  />
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>

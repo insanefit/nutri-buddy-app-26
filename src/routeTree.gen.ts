@@ -9,17 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/app'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppIndexRouteImport } from './routes/app/index'
-import { Route as AppPatientsRouteImport } from './routes/app/patients'
 import { Route as AppFoodsRouteImport } from './routes/app/foods'
+import { Route as AppOrientationsRouteImport } from './routes/app/orientations'
+import { Route as AppPatientsRouteImport } from './routes/app/patients'
 import { Route as AppPatientsIdRouteImport } from './routes/app/patients/$id'
 
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -27,9 +28,9 @@ const AppRoute = AppRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -37,14 +38,19 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppPatientsRoute = AppPatientsRouteImport.update({
-  id: '/patients',
-  path: '/patients',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppFoodsRoute = AppFoodsRouteImport.update({
   id: '/foods',
   path: '/foods',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOrientationsRoute = AppOrientationsRouteImport.update({
+  id: '/orientations',
+  path: '/orientations',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPatientsRoute = AppPatientsRouteImport.update({
+  id: '/patients',
+  path: '/patients',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPatientsIdRoute = AppPatientsIdRouteImport.update({
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
   '/app/foods': typeof AppFoodsRoute
+  '/app/orientations': typeof AppOrientationsRoute
   '/app/patients': typeof AppPatientsRouteWithChildren
   '/app/': typeof AppIndexRoute
   '/app/patients/$id': typeof AppPatientsIdRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/app/foods': typeof AppFoodsRoute
+  '/app/orientations': typeof AppOrientationsRoute
   '/app/patients': typeof AppPatientsRouteWithChildren
   '/app': typeof AppIndexRoute
   '/app/patients/$id': typeof AppPatientsIdRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
   '/app/foods': typeof AppFoodsRoute
+  '/app/orientations': typeof AppOrientationsRoute
   '/app/patients': typeof AppPatientsRouteWithChildren
   '/app/': typeof AppIndexRoute
   '/app/patients/$id': typeof AppPatientsIdRoute
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/app/foods'
+    | '/app/orientations'
     | '/app/patients'
     | '/app/'
     | '/app/patients/$id'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/app/foods'
+    | '/app/orientations'
     | '/app/patients'
     | '/app'
     | '/app/patients/$id'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/app/foods'
+    | '/app/orientations'
     | '/app/patients'
     | '/app/'
     | '/app/patients/$id'
@@ -117,11 +129,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -131,11 +143,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/': {
@@ -145,18 +157,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/patients': {
-      id: '/app/patients'
-      path: '/patients'
-      fullPath: '/app/patients'
-      preLoaderRoute: typeof AppPatientsRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/app/foods': {
       id: '/app/foods'
       path: '/foods'
       fullPath: '/app/foods'
       preLoaderRoute: typeof AppFoodsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/orientations': {
+      id: '/app/orientations'
+      path: '/orientations'
+      fullPath: '/app/orientations'
+      preLoaderRoute: typeof AppOrientationsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/patients': {
+      id: '/app/patients'
+      path: '/patients'
+      fullPath: '/app/patients'
+      preLoaderRoute: typeof AppPatientsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/patients/$id': {
@@ -183,12 +202,14 @@ const AppPatientsRouteWithChildren = AppPatientsRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppFoodsRoute: typeof AppFoodsRoute
+  AppOrientationsRoute: typeof AppOrientationsRoute
   AppPatientsRoute: typeof AppPatientsRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppFoodsRoute: AppFoodsRoute,
+  AppOrientationsRoute: AppOrientationsRoute,
   AppPatientsRoute: AppPatientsRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
 }
@@ -203,3 +224,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

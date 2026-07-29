@@ -15,8 +15,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/patients/$id")({
@@ -160,7 +172,13 @@ function PatientDetailPage() {
             <form onSubmit={handleAddMeal} className="space-y-4 pt-2">
               <div className="space-y-2">
                 <Label htmlFor="date">Data</Label>
-                <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+                <Input
+                  id="date"
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="mealName">Refeição</Label>
@@ -249,7 +267,9 @@ function PatientDetailPage() {
         ) : (
           <div className="rounded-2xl border border-dashed border-border p-12 text-center">
             <p className="text-muted-foreground">Nenhuma refeição registrada.</p>
-            <p className="mt-2 text-sm text-muted-foreground">Adicione a primeira refeição do paciente.</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Adicione a primeira refeição do paciente.
+            </p>
           </div>
         )}
       </div>
