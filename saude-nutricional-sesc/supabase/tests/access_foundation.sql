@@ -7,7 +7,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(9);
+select plan(13);
 
 insert into auth.users (id, email)
 values
@@ -177,6 +177,60 @@ select throws_ok(
 );
 
 reset role;
+
+select throws_ok(
+  $sql$
+    insert into public.audit_events (event_type, entity_type, metadata)
+    values (
+      'audit_metadata_validation',
+      'test',
+      '{"Clinical_Text":"x"}'::jsonb
+    )
+  $sql$,
+  '23514',
+  null,
+  'audit metadata rejects prohibited root keys regardless of case'
+);
+
+select throws_ok(
+  $sql$
+    insert into public.audit_events (event_type, entity_type, metadata)
+    values (
+      'audit_metadata_validation',
+      'test',
+      '{"outer":{"notes":"x"}}'::jsonb
+    )
+  $sql$,
+  '23514',
+  null,
+  'audit metadata rejects nested notes'
+);
+
+select throws_ok(
+  $sql$
+    insert into public.audit_events (event_type, entity_type, metadata)
+    values (
+      'audit_metadata_validation',
+      'test',
+      '{"level1":{"level2":{"anamnesis":"x"}}}'::jsonb
+    )
+  $sql$,
+  '23514',
+  null,
+  'audit metadata rejects prohibited keys at any nesting depth'
+);
+
+select lives_ok(
+  $sql$
+    insert into public.audit_events (event_type, entity_type, metadata)
+    values (
+      'audit_metadata_validation',
+      'test',
+      '{"outer":{"status":"ok"},"profile_id":"safe"}'::jsonb
+    )
+  $sql$,
+  'audit metadata accepts safe nested keys'
+);
 
 select ok(
   (

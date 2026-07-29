@@ -50,7 +50,12 @@ create table public.audit_events (
   entity_id text,
   metadata jsonb not null default '{}'::jsonb,
   occurred_at timestamptz not null default now(),
-  check (not (metadata ?| array['clinical_text', 'notes', 'anamnesis']))
+  check (
+    not jsonb_path_exists(
+      metadata,
+      'lax $.** ? (@.type() == "object").keyvalue() ? (@.key like_regex "^(clinical_text|notes|anamnesis)$" flag "i")'
+    )
+  )
 );
 
 create function private.current_profile()
