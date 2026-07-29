@@ -29,10 +29,14 @@ const {
   profileSelectMock,
   redirectMock,
   state,
+  unitsEqMock,
+  unitsQuery,
+  unitsSelectMock,
 } = vi.hoisted(() => {
   const hoistedState: {
     profileResult: QueryResult<ProfileData>;
     grantsResult: QueryResult<{ unit_id: string }[]>;
+    unitsResult: QueryResult<{ id: string }[]>;
     validFromFilter: { column: string; value: string } | null;
     validUntilFilter: { column: string; value: string } | null;
   } = {
@@ -53,11 +57,19 @@ const {
       ],
       error: null,
     },
+    unitsResult: {
+      data: [
+        { id: "10000000-0000-4000-8000-000000000001" },
+        { id: "10000000-0000-4000-8000-000000000002" },
+      ],
+      error: null,
+    },
     validFromFilter: null,
     validUntilFilter: null,
   };
   const profileQueryDouble: Record<string, unknown> = {};
   const grantsQueryDouble: Record<string, unknown> = {};
+  const unitsQueryDouble: Record<string, unknown> = {};
 
   return {
     authGetUserMock: vi.fn(),
@@ -91,6 +103,12 @@ const {
       throw new Error(`NEXT_REDIRECT:${path}`);
     }),
     state: hoistedState,
+    unitsEqMock: vi.fn(
+      async (_column: string, _value: unknown) =>
+        hoistedState.unitsResult,
+    ),
+    unitsQuery: unitsQueryDouble,
+    unitsSelectMock: vi.fn(() => unitsQueryDouble),
   };
 });
 
@@ -105,6 +123,10 @@ Object.assign(grantsQuery, {
   is: grantsIsMock,
   lte: grantsLteMock,
   gt: grantsGtMock,
+});
+Object.assign(unitsQuery, {
+  select: unitsSelectMock,
+  eq: unitsEqMock,
 });
 
 vi.mock("next/dist/compiled/server-only", () => ({}));
@@ -122,6 +144,7 @@ import { loadActor, requireUnitAccess } from "./actor";
 const user = {
   id: "00000000-0000-4000-8000-000000000002",
 };
+const inactiveUnitId = "10000000-0000-4000-8000-000000000003";
 
 describe("actor access context", () => {
   beforeEach(() => {
@@ -143,6 +166,13 @@ describe("actor access context", () => {
       ],
       error: null,
     };
+    state.unitsResult = {
+      data: [
+        { id: "10000000-0000-4000-8000-000000000001" },
+        { id: "10000000-0000-4000-8000-000000000002" },
+      ],
+      error: null,
+    };
     state.validFromFilter = null;
     state.validUntilFilter = null;
     authGetUserMock.mockResolvedValue({
@@ -152,6 +182,7 @@ describe("actor access context", () => {
     fromMock.mockImplementation((table: string) => {
       if (table === "profiles") return profileQuery;
       if (table === "unit_access_grants") return grantsQuery;
+      if (table === "units") return unitsQuery;
       throw new Error(`Unexpected table: ${table}`);
     });
     createClientMock.mockResolvedValue({
@@ -226,6 +257,82 @@ describe("actor access context", () => {
     };
 
     await expect(loadActor()).rejects.toThrow("ACTOR_ACCESS_LOAD_FAILED");
+  });
+
+  it("allows an active coordinator without grants to access another active unit", async () => {
+    state.profileResult = {
+      data: {
+        ...state.profileResult.data!,
+        role: "coordinator",
+      },
+      error: null,
+    };
+    state.grantsResult = { data: [], error: null };
+
+    const actor = await requireUnitAccess(
+      "10000000-0000-4000-8000-000000000002",
+    );
+
+    expect(actor.accessibleUnitIds).toEqual([
+      "10000000-0000-4000-8000-000000000001",
+      "10000000-0000-4000-8000-000000000002",
+    ]);
+    expect(Object.isFrozen(actor.accessibleUnitIds)).toBe(true);
+    expect(actor.accessibleUnitIds).not.toContain(inactiveUnitId);
+    expect(unitsEqMock).toHaveBeenCalledWith("active", true);
+    expect(grantsSelectMock).not.toHaveBeenCalled();
+  });
+
+  it("continues to deny a nutritionist without a grant", async () => {
+    state.grantsResult = { data: [], error: null };
+
+    await expect(
+      requireUnitAccess("10000000-0000-4000-8000-000000000002"),
+    ).rejects.toThrow("UNIT_FORBIDDEN");
+    expect(unitsSelectMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when active units cannot be loaded for a coordinator", async () => {
+    state.profileResult = {
+      data: {
+        ...state.profileResult.data!,
+        role: "coordinator",
+      },
+      error: null,
+    };
+    state.grantsResult = { data: [], error: null };
+    state.unitsResult = {
+      data: null,
+      error: new Error("database unavailable"),
+    };
+
+    await expect(loadActor()).rejects.toThrow("ACTOR_ACCESS_LOAD_FAILED");
+  });
+
+  it("rejects malformed active units returned for a coordinator", async () => {
+    state.profileResult = {
+      data: {
+        ...state.profileResult.data!,
+        role: "coordinator",
+      },
+      error: null,
+    };
+    state.grantsResult = { data: [], error: null };
+    state.unitsResult = {
+      data: [{ id: "unit-malformada" }],
+      error: null,
+    };
+
+    await expect(loadActor()).rejects.toThrow("ACTOR_DATA_INVALID");
+  });
+
+  it("rejects a malformed unit id in active nutritionist grants", async () => {
+    state.grantsResult = {
+      data: [{ unit_id: "grant-malformado" }],
+      error: null,
+    };
+
+    await expect(loadActor()).rejects.toThrow("ACTOR_DATA_INVALID");
   });
 
   it("creates a new frozen context from the active profile and current grants", async () => {
