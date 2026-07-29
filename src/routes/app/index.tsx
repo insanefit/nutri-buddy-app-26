@@ -14,8 +14,8 @@ export const Route = createFileRoute("/app/")({
   },
   head: () => ({
     meta: [
-      { title: "Dashboard — NutriAvalia" },
-      { name: "description", content: "Visão geral da sua prática nutricional." },
+      { title: "Painel Clínico — Saúde Nutricional Sesc" },
+      { name: "description", content: "Visão geral do atendimento clínico nutricional Sesc." },
     ],
   }),
   component: DashboardPage,
@@ -29,13 +29,15 @@ function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex items-center justify-between border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Dashboard</h1>
-          <p className="mt-1 text-muted-foreground">Visão geral da sua prática</p>
+          <h1 className="text-2xl font-bold tracking-tight text-[#003366]">Painel Clínico Sesc</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            Gestão de prontuários e atendimento das unidades
+          </p>
         </div>
-        <Button asChild>
-          <Link to="/app/patients">Ver pacientes</Link>
+        <Button asChild className="bg-[#003366] hover:bg-[#002244] text-white">
+          <Link to="/app/patients">Ver prontuários</Link>
         </Button>
       </div>
 

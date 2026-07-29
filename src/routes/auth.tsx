@@ -15,8 +15,11 @@ export const Route = createFileRoute("/auth")({
   }),
   head: () => ({
     meta: [
-      { title: "Entrar — NutriAvalia" },
-      { name: "description", content: "Entre ou crie sua conta no NutriAvalia." },
+      { title: "Entrar — Saúde Nutricional Sesc" },
+      {
+        name: "description",
+        content: "Acesso ao prontuário clínico e sistema de Saúde Nutricional Sesc.",
+      },
     ],
   }),
   component: AuthPage,
@@ -62,11 +65,16 @@ function AuthPage() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-md">
+    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12 bg-slate-50">
+      <Card className="w-full max-w-md border-t-4 border-t-[#003366] shadow-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-semibold">Bem-vindo ao NutriAvalia</CardTitle>
-          <CardDescription>Entre com sua conta para continuar</CardDescription>
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded bg-[#FFCC00] font-black text-[#003366] text-xl shadow">
+            S
+          </div>
+          <CardTitle className="text-2xl font-bold text-[#003366]">
+            Saúde Nutricional Sesc
+          </CardTitle>
+          <CardDescription>Acesso ao Prontuário e Sistema Clínico</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs

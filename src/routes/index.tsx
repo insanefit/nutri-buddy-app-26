@@ -1,20 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Apple, ClipboardList, Users } from "lucide-react";
+import { ShieldCheck, UserCheck, Utensils, BookOpen } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "NutriAvalia — Avaliação nutricional para profissionais" },
+      { title: "Saúde Nutricional Sesc — Piloto de Atendimento Clínico" },
       {
         name: "description",
         content:
-          "Acompanhe pacientes, registre diários alimentares e avalie a ingestão nutricional de forma simples e minimalista.",
+          "Sistema de atendimento clínico nutricional, prontuário centralizado, tabela de alimentos e orientações oficiais do Ministério da Saúde para o Sesc.",
       },
-      { property: "og:title", content: "NutriAvalia — Avaliação nutricional para profissionais" },
+      { property: "og:title", content: "Saúde Nutricional Sesc" },
       {
         property: "og:description",
         content:
-          "Acompanhe pacientes, registre diários alimentares e avalie a ingestão nutricional.",
+          "Prontuário clínico centralizado, avaliação antropométrica e prescrição alimentar para o Sesc.",
       },
     ],
   }),
@@ -23,51 +23,66 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   return (
-    <div className="flex flex-col">
-      <section className="relative overflow-hidden px-4 py-24 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-            Avaliação nutricional sem complicação
+    <div className="flex flex-col min-h-[calc(100vh-4rem)] bg-slate-50">
+      {/* Hero Section Institucional Sesc */}
+      <section className="relative overflow-hidden bg-[#003366] text-white px-4 py-20 sm:px-6 lg:px-8 border-b-8 border-[#FFCC00] shadow-md">
+        <div className="mx-auto max-w-4xl text-center space-y-6">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#002855] px-4 py-1.5 text-xs font-semibold text-[#FFCC00] border border-blue-800">
+            <ShieldCheck className="h-4 w-4" />
+            Piloto Institucional Sesc — Atendimento em Duas Unidades
+          </div>
+
+          <h1 className="text-3xl font-extrabold tracking-tight sm:text-5xl leading-tight">
+            Saúde Nutricional Sesc
           </h1>
-          <p className="mt-6 text-lg leading-8 text-muted-foreground">
-            NutriAvalia ajuda nutricionistas a acompanhar pacientes, registrar diários alimentares e
-            visualizar a ingestão de macronutrientes em um só lugar.
+
+          <p className="mx-auto max-w-2xl text-base sm:text-lg text-blue-100 leading-relaxed">
+            Plataforma clínica centralizada para atendimento nutricional, prontuário imutável,
+            avaliação antropométrica por público e prescrição de planos alimentares.
           </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+
+          <div className="pt-4 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               to="/auth"
               search={{ mode: "signin" }}
-              className="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              className="inline-flex items-center justify-center rounded-md bg-[#FFCC00] px-8 py-3 text-base font-bold text-[#003366] transition-colors hover:bg-amber-300 shadow-lg"
             >
-              Começar agora
+              Acessar o Prontuário Clínico
             </Link>
             <Link
-              to="/auth"
-              search={{ mode: "signup" }}
-              className="inline-flex items-center justify-center rounded-full border border-input bg-background px-8 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+              to="/app/orientations"
+              className="inline-flex items-center justify-center rounded-md border border-blue-400 bg-[#002855] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-900"
             >
-              Criar conta gratuita
+              Ver Orientações do Ministério da Saúde
             </Link>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-6xl px-4 pb-24 sm:px-6 lg:px-8">
+      {/* Seção de Funcionalidades do Piloto Sesc */}
+      <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl font-bold text-[#003366]">Módulos Clínicos do Piloto</h2>
+          <p className="text-sm text-slate-600 mt-1">
+            Conforme especificado no plano de diretrizes e governança Sesc
+          </p>
+        </div>
+
         <div className="grid gap-8 sm:grid-cols-3">
           <FeatureCard
-            icon={<Users className="h-6 w-6 text-primary" />}
-            title="Gestão de pacientes"
-            description="Cadastre e acompanhe seus pacientes com perfis simples e organizados."
+            icon={<UserCheck className="h-6 w-6 text-[#003366]" />}
+            title="Prontuário Centrado no Paciente"
+            description="Histórico imutável de consultas, anamnese por faixa etária (crianças, adultos, idosos, gestantes) e acompanhamento de medidas."
           />
           <FeatureCard
-            icon={<ClipboardList className="h-6 w-6 text-primary" />}
-            title="Diário alimentar"
-            description="Registre refeições e alimentos consumidos ao longo do dia com poucos cliques."
+            icon={<Utensils className="h-6 w-6 text-[#003366]" />}
+            title="Tabela Nutricional & Alimentos"
+            description="Composição de calorias e macronutrientes (proteínas, carbs, gorduras) com alimentos da dieta brasileira e customizados."
           />
           <FeatureCard
-            icon={<Apple className="h-6 w-6 text-primary" />}
-            title="Banco de alimentos"
-            description="Utilize alimentos pré-cadastrados ou crie seus próprios itens personalizados."
+            icon={<BookOpen className="h-6 w-6 text-[#003366]" />}
+            title="Diretrizes do Ministério da Saúde"
+            description="Modelos reutilizáveis de orientação sobre alimentação consciente, planejamento e hábitos alimentares."
           />
         </div>
       </section>
@@ -85,12 +100,10 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md">
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-        {icon}
-      </div>
-      <h3 className="mt-4 text-lg font-semibold text-card-foreground">{title}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+    <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md border-t-4 border-t-[#003366]">
+      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-50">{icon}</div>
+      <h3 className="mt-4 text-base font-bold text-[#003366]">{title}</h3>
+      <p className="mt-2 text-xs leading-relaxed text-slate-600">{description}</p>
     </div>
   );
 }
