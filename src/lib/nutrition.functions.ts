@@ -155,6 +155,7 @@ export const createFood = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("foods").insert({
       ...data,
+      is_custom: true,
       created_by: context.userId,
     });
     if (error) throw error;
