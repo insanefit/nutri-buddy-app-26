@@ -58,9 +58,6 @@ function HomePage() {
       <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-2xl font-bold text-[#003366]">Módulos Clínicos</h2>
-          <p className="text-sm text-slate-600 mt-1">
-            Conforme especificado no plano de diretrizes e governança Sesc
-          </p>
         </div>
 
         <div className="grid gap-8 sm:grid-cols-3">
