@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { SescLogo } from "@/components/SescLogo";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -171,14 +172,12 @@ function Header() {
     <header className="sticky top-0 z-50 w-full border-b-4 border-[#FFCC00] bg-[#003366] text-white shadow-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded bg-[#FFCC00] font-black text-[#003366] text-lg shadow">
-            S
-          </div>
-          <div>
-            <span className="text-lg font-bold tracking-tight text-white block leading-tight">
+          <SescLogo className="h-10" variant="white" showSubLabel={true} />
+          <div className="border-l border-blue-800/80 pl-3">
+            <span className="text-base font-bold tracking-tight text-white block leading-tight">
               Saúde Nutricional
             </span>
-            <span className="text-[10px] text-blue-200 uppercase tracking-widest font-semibold block">
+            <span className="text-[10px] text-amber-300 uppercase tracking-widest font-semibold block">
               Prontuário Clínico
             </span>
           </div>

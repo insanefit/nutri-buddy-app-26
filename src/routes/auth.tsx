@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, UserCheck, Building2 } from "lucide-react";
 import { toast } from "sonner";
+import { SescLogo } from "@/components/SescLogo";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (search) => ({
@@ -77,12 +78,10 @@ function AuthPage() {
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12 bg-slate-50">
       <Card className="w-full max-w-md border-t-8 border-t-[#003366] border-slate-200 shadow-lg bg-white">
         <CardHeader className="text-center pb-4">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-lg bg-[#003366] text-[#FFCC00] font-black text-2xl shadow">
-            S
+          <div className="mx-auto mb-2 flex justify-center">
+            <SescLogo className="h-12" variant="dark" showSubLabel={true} />
           </div>
-          <CardTitle className="text-2xl font-bold text-[#003366]">
-            Saúde Nutricional Sesc
-          </CardTitle>
+          <CardTitle className="text-xl font-bold text-[#003366] mt-2">Saúde Nutricional</CardTitle>
           <CardDescription className="text-xs text-slate-600 mt-1">
             Prontuário Clínico & Sistema de Gestão
           </CardDescription>
