@@ -79,7 +79,7 @@ function AuthPage() {
       <Card className="w-full max-w-md border-t-8 border-t-[#003366] border-slate-200 shadow-lg bg-white">
         <CardHeader className="text-center pb-4">
           <div className="mx-auto mb-2 flex justify-center">
-            <SescLogo className="h-12" variant="dark" showSubLabel={true} />
+            <SescLogo className="h-16" variant="vertical" />
           </div>
           <CardTitle className="text-xl font-bold text-[#003366] mt-2">Saúde Nutricional</CardTitle>
           <CardDescription className="text-xs text-slate-600 mt-1">
