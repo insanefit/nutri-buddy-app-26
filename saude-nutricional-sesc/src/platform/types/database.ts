@@ -212,6 +212,117 @@ export type Database = {
         }
         Relationships: []
       }
+      foods: {
+        Row: {
+          calories_per_100g: number
+          carbs_per_100g: number
+          created_at: string
+          created_by: string | null
+          fat_per_100g: number
+          id: string
+          is_custom: boolean
+          name: string
+          protein_per_100g: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          calories_per_100g?: number
+          carbs_per_100g?: number
+          created_at?: string
+          created_by?: string | null
+          fat_per_100g?: number
+          id?: string
+          is_custom?: boolean
+          name: string
+          protein_per_100g?: number
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          calories_per_100g?: number
+          carbs_per_100g?: number
+          created_at?: string
+          created_by?: string | null
+          fat_per_100g?: number
+          id?: string
+          is_custom?: boolean
+          name?: string
+          protein_per_100g?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      prescriptions: {
+        Row: {
+          created_at: string
+          id: string
+          nutritionist_id: string
+          notes: string | null
+          patient_id: string
+          unit_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nutritionist_id: string
+          notes?: string | null
+          patient_id: string
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nutritionist_id?: string
+          notes?: string | null
+          patient_id?: string
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      prescription_items: {
+        Row: {
+          calculated_calories: number
+          calculated_carbs: number
+          calculated_fat: number
+          calculated_protein: number
+          created_at: string
+          food_id: string
+          id: string
+          meal_name: string
+          prescription_id: string
+          quantity_grams: number
+        }
+        Insert: {
+          calculated_calories?: number
+          calculated_carbs?: number
+          calculated_fat?: number
+          calculated_protein?: number
+          created_at?: string
+          food_id: string
+          id?: string
+          meal_name?: string
+          prescription_id: string
+          quantity_grams?: number
+        }
+        Update: {
+          calculated_calories?: number
+          calculated_carbs?: number
+          calculated_fat?: number
+          calculated_protein?: number
+          created_at?: string
+          food_id?: string
+          id?: string
+          meal_name?: string
+          prescription_id?: string
+          quantity_grams?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

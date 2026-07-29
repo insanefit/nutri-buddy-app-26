@@ -5,6 +5,7 @@ import type { ActorContext } from "../modules/access/types";
 const baseLinks = [
   { href: "/inicio", label: "Início" },
   { href: "/pacientes", label: "Pacientes" },
+  { href: "/alimentos", label: "Alimentos" },
   { href: "/agenda", label: "Agenda" },
   { href: "/relatorios", label: "Relatórios" },
 ] as const;
@@ -37,34 +38,42 @@ export function AppShell({
         Ir para o conteúdo
       </a>
 
-      <header className="border-b-4 border-amber-400 bg-blue-950 text-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-8 px-8 py-5">
-          <div>
-            <p className="text-lg font-bold leading-tight">
-              Saúde Nutricional
-            </p>
-            <p className="mt-1 text-base text-blue-100">
-              Atendimento clínico seguro
-            </p>
+      {/* Header Institucional Saúde Nutricional Sesc */}
+      <header className="border-b-4 border-[#FFCC00] bg-[#003366] text-white shadow-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-8 px-8 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded bg-[#FFCC00] font-black text-[#003366] text-xl shadow">
+              S
+            </div>
+            <div>
+              <p className="text-xl font-bold leading-tight tracking-tight text-white">
+                Saúde Nutricional
+              </p>
+              <p className="text-xs text-blue-200 uppercase tracking-widest font-semibold">
+                Piloto Sesc — Prontuário Clínico
+              </p>
+            </div>
           </div>
 
-          <div className="text-right">
-            <p className="font-semibold">{actor.fullName}</p>
-            <p className="mt-1 text-base text-blue-100">
+          <div className="text-right border-l border-blue-800/80 pl-6">
+            <p className="font-semibold text-sm text-white">{actor.fullName}</p>
+            <p className="mt-0.5 text-xs text-amber-300 font-medium flex items-center justify-end gap-1">
+              <span className="h-2 w-2 rounded-full bg-amber-400 inline-block"></span>
               {primaryUnitName}
             </p>
           </div>
         </div>
 
+        {/* Barra de Navegação */}
         <nav
           aria-label="Navegação principal"
-          className="border-t border-blue-800"
+          className="border-t border-blue-900/60 bg-[#002855]"
         >
-          <ul className="mx-auto flex max-w-7xl flex-wrap gap-2 px-8 py-2">
+          <ul className="mx-auto flex max-w-7xl flex-wrap gap-1 px-8 py-1.5">
             {links.map((link) => (
               <li key={link.href}>
                 <Link
-                  className="inline-flex min-h-11 items-center rounded px-4 py-2 font-semibold text-blue-50 outline-none hover:bg-blue-800 focus-visible:ring-4 focus-visible:ring-amber-300"
+                  className="inline-flex min-h-10 items-center rounded px-3.5 py-1.5 text-sm font-medium text-blue-100 outline-none hover:bg-[#003366] hover:text-white focus-visible:ring-2 focus-visible:ring-[#FFCC00] transition-colors"
                   href={link.href}
                 >
                   {link.label}

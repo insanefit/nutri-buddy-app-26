@@ -65,7 +65,7 @@ describe("AppShell", () => {
     expect(
       screen.getByRole("link", { name: "Configurações" }),
     ).toHaveAttribute("href", "/settings/access");
-    expect(screen.getAllByRole("link")).toHaveLength(6);
+    expect(screen.getAllByRole("link")).toHaveLength(7);
     expect(coordinator.accessibleUnitIds).toEqual(actorSnapshot);
 
     unmount();
@@ -78,7 +78,7 @@ describe("AppShell", () => {
       </AppShell>,
     );
 
-    expect(screen.getAllByRole("link")).toHaveLength(5);
+    expect(screen.getAllByRole("link")).toHaveLength(6);
     expect(nutritionist.accessibleUnitIds).toEqual(nutritionistUnitIds);
   });
 });
