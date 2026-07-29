@@ -54,10 +54,10 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Seção de Funcionalidades do Piloto Sesc */}
+      {/* Seção de Funcionalidades do Sesc */}
       <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h2 className="text-2xl font-bold text-[#003366]">Módulos Clínicos do Piloto</h2>
+          <h2 className="text-2xl font-bold text-[#003366]">Módulos Clínicos</h2>
           <p className="text-sm text-slate-600 mt-1">
             Conforme especificado no plano de diretrizes e governança Sesc
           </p>
