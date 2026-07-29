@@ -7,7 +7,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(25);
+select plan(30);
 
 insert into auth.users (id, email)
 values
@@ -28,10 +28,11 @@ values
 select ok(
   (
     select rolbypassrls
+      and not rolsuper
     from pg_roles
     where rolname = 'service_role'
   ),
-  'service_role keeps the platform-provided BYPASSRLS attribute'
+  'service_role keeps BYPASSRLS without becoming a superuser'
 );
 
 select ok(
@@ -119,6 +120,33 @@ select ok(
     'SELECT,INSERT,UPDATE,DELETE'
   ),
   'service_role receives no client CRUD privileges on other foundation tables'
+);
+
+select ok(
+  has_table_privilege('service_role', 'public.profiles', 'SELECT')
+  and has_table_privilege('service_role', 'public.profiles', 'INSERT')
+  and has_table_privilege('service_role', 'public.profiles', 'UPDATE')
+  and not has_table_privilege(
+    'service_role',
+    'public.profiles',
+    'DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN'
+  )
+  and not has_table_privilege(
+    'service_role',
+    'public.units',
+    'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN'
+  )
+  and not has_table_privilege(
+    'service_role',
+    'public.unit_access_grants',
+    'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN'
+  )
+  and not has_table_privilege(
+    'service_role',
+    'public.audit_events',
+    'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN'
+  ),
+  'service_role has exactly profile provisioning table privileges'
 );
 
 set local role authenticated;
@@ -500,6 +528,38 @@ select ok(
   ),
   'audit and ACL isolation exclude clinical keys and direct writes'
 );
+
+set local role service_role;
+
+select throws_ok(
+  $sql$truncate table public.units cascade$sql$,
+  '42501',
+  null,
+  'service_role cannot truncate units'
+);
+
+select throws_ok(
+  $sql$truncate table public.profiles cascade$sql$,
+  '42501',
+  null,
+  'service_role cannot truncate profiles'
+);
+
+select throws_ok(
+  $sql$truncate table public.unit_access_grants cascade$sql$,
+  '42501',
+  null,
+  'service_role cannot truncate unit access grants'
+);
+
+select throws_ok(
+  $sql$truncate table public.audit_events cascade$sql$,
+  '42501',
+  null,
+  'service_role cannot truncate audit events'
+);
+
+reset role;
 
 select * from finish();
 

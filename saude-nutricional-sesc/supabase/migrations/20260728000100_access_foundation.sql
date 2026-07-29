@@ -352,6 +352,11 @@ revoke all on table public.profiles from public, anon, authenticated;
 revoke all on table public.unit_access_grants from public, anon, authenticated;
 revoke all on table public.audit_events from public, anon, authenticated;
 
+revoke all on table public.units from service_role;
+revoke all on table public.profiles from service_role;
+revoke all on table public.unit_access_grants from service_role;
+revoke all on table public.audit_events from service_role;
+
 grant select on table public.units to authenticated;
 grant select on table public.profiles to authenticated;
 grant select on table public.unit_access_grants to authenticated;
