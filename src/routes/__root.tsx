@@ -173,7 +173,7 @@ function Header() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-3">
           <div className="bg-white px-2.5 py-1 rounded shadow-sm flex items-center justify-center">
-            <SescLogo className="h-7" variant="horizontal" />
+            <SescLogo className="h-8" />
           </div>
           <div className="border-l border-blue-800/80 pl-3">
             <span className="text-base font-bold tracking-tight text-white block leading-tight">
