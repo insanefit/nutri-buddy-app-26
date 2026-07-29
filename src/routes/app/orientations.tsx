@@ -89,7 +89,7 @@ function OrientationsPage() {
               <p className="text-xs text-slate-600 leading-relaxed">{item.description}</p>
             </div>
             <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-400 font-medium">
-              Piloto Saúde Nutricional Sesc
+              Saúde Nutricional Sesc
             </div>
           </div>
         ))}

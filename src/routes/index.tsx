@@ -27,11 +27,6 @@ function HomePage() {
       {/* Hero Section Institucional Sesc */}
       <section className="relative overflow-hidden bg-[#003366] text-white px-4 py-20 sm:px-6 lg:px-8 border-b-8 border-[#FFCC00] shadow-md">
         <div className="mx-auto max-w-4xl text-center space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[#002855] px-4 py-1.5 text-xs font-semibold text-[#FFCC00] border border-blue-800">
-            <ShieldCheck className="h-4 w-4" />
-            Piloto Institucional Sesc — Atendimento em Duas Unidades
-          </div>
-
           <h1 className="text-3xl font-extrabold tracking-tight sm:text-5xl leading-tight">
             Saúde Nutricional Sesc
           </h1>

@@ -179,7 +179,7 @@ function Header() {
               Saúde Nutricional
             </span>
             <span className="text-[10px] text-blue-200 uppercase tracking-widest font-semibold block">
-              Piloto Sesc — Prontuário Clínico
+              Prontuário Clínico
             </span>
           </div>
         </Link>
