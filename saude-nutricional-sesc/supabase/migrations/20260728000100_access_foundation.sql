@@ -142,13 +142,13 @@ using (
   )
 );
 
-create policy "coordinators can read active units"
+create policy "active profiles can read accessible units"
 on public.units
 for select
 to authenticated
 using (
   active
-  and (select private.is_coordinator())
+  and private.can_access_unit(units.id)
 );
 
 create policy "profiles can read permitted access grants"

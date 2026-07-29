@@ -7,7 +7,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(13);
+select plan(18);
 
 insert into auth.users (id, email)
 values
@@ -49,6 +49,16 @@ select ok(
   'the nutritionist can access their primary unit and own profile'
 );
 
+select is(
+  (
+    select count(*)
+    from public.units
+    where id = :'unit_a_id'
+  ),
+  1::bigint,
+  'the nutritionist can read their active primary unit'
+);
+
 select ok(
   not private.can_access_unit(:'unit_b_id')
   and not exists (
@@ -59,6 +69,7 @@ select ok(
   and not exists (
     select 1
     from public.units
+    where id = :'unit_b_id'
   )
   and not exists (
     select 1
@@ -74,6 +85,12 @@ select set_config(
     'role', 'authenticated'
   )::text,
   true
+);
+
+select is(
+  (select count(*) from public.units),
+  2::bigint,
+  'the coordinator can read both active units'
 );
 
 select lives_ok(
@@ -104,6 +121,11 @@ select set_config(
 
 select ok(
   private.can_access_unit(:'unit_b_id')
+  and exists (
+    select 1
+    from public.units
+    where id = :'unit_b_id'
+  )
   and (
     select count(*) = 1
     from public.unit_access_grants
@@ -150,6 +172,11 @@ select ok(
   not private.can_access_unit(:'unit_b_id')
   and not exists (
     select 1
+    from public.units
+    where id = :'unit_b_id'
+  )
+  and not exists (
+    select 1
     from public.unit_access_grants
     where profile_id = :'nutritionist_id'
       and unit_id = :'unit_b_id'
@@ -177,6 +204,93 @@ select throws_ok(
 );
 
 reset role;
+
+insert into public.unit_access_grants (
+  profile_id,
+  unit_id,
+  reason,
+  granted_by,
+  valid_from,
+  valid_until
+)
+values (
+  :'nutritionist_id',
+  :'unit_b_id',
+  'Concessão expirada para teste',
+  :'coordinator_id',
+  now() - interval '2 days',
+  now() - interval '1 day'
+);
+
+set local role authenticated;
+
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object(
+    'sub', :'nutritionist_id',
+    'role', 'authenticated'
+  )::text,
+  true
+);
+
+select ok(
+  not private.can_access_unit(:'unit_b_id')
+  and not exists (
+    select 1
+    from public.units
+    where id = :'unit_b_id'
+  )
+  and not exists (
+    select 1
+    from public.unit_access_grants
+    where profile_id = :'nutritionist_id'
+      and unit_id = :'unit_b_id'
+  ),
+  'an expired grant does not expose the other unit'
+);
+
+reset role;
+
+update public.units
+set active = false
+where id = :'unit_b_id';
+
+set local role authenticated;
+
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object(
+    'sub', :'coordinator_id',
+    'role', 'authenticated'
+  )::text,
+  true
+);
+
+select ok(
+  not private.can_access_unit(:'unit_b_id')
+  and not exists (
+    select 1
+    from public.units
+    where id = :'unit_b_id'
+  ),
+  'an inactive unit is hidden even from a coordinator'
+);
+
+reset role;
+
+select ok(
+  not has_table_privilege(
+    'anon',
+    'public.units',
+    'SELECT,INSERT,UPDATE,DELETE'
+  )
+  and not has_table_privilege(
+    'public',
+    'public.units',
+    'SELECT,INSERT,UPDATE,DELETE'
+  ),
+  'anon and PUBLIC have no direct privileges on units'
+);
 
 select throws_ok(
   $sql$
