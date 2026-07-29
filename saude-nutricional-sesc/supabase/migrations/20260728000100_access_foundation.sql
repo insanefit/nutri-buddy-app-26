@@ -356,6 +356,8 @@ grant select on table public.units to authenticated;
 grant select on table public.profiles to authenticated;
 grant select on table public.unit_access_grants to authenticated;
 
+grant select, insert, update on table public.profiles to service_role;
+
 grant usage on schema private to authenticated;
 grant execute on function private.is_coordinator() to authenticated;
 grant execute on function private.can_access_unit(uuid) to authenticated;

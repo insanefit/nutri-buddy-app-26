@@ -7,7 +7,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(18);
+select plan(25);
 
 insert into auth.users (id, email)
 values
@@ -24,6 +24,102 @@ insert into public.profiles (id, full_name, role, primary_unit_id)
 values
   (:'coordinator_id', 'Coordenação de Teste', 'coordinator', :'unit_a_id'),
   (:'nutritionist_id', 'Nutricionista de Teste', 'nutritionist', :'unit_a_id');
+
+select ok(
+  (
+    select rolbypassrls
+    from pg_roles
+    where rolname = 'service_role'
+  ),
+  'service_role keeps the platform-provided BYPASSRLS attribute'
+);
+
+select ok(
+  has_table_privilege('service_role', 'public.profiles', 'SELECT')
+  and has_table_privilege('service_role', 'public.profiles', 'INSERT')
+  and has_table_privilege('service_role', 'public.profiles', 'UPDATE')
+  and not has_table_privilege('service_role', 'public.profiles', 'DELETE'),
+  'service_role has only the profile provisioning CRUD privileges it needs'
+);
+
+set local role service_role;
+
+select lives_ok(
+  format(
+    $sql$
+      insert into public.profiles (id, full_name, role, primary_unit_id)
+      values (%L::uuid, %L, 'nutritionist', %L::uuid)
+      on conflict (id) do update
+      set
+        full_name = excluded.full_name,
+        role = excluded.role,
+        primary_unit_id = excluded.primary_unit_id
+    $sql$,
+    :'nutritionist_id',
+    'Perfil provisionado pela service role',
+    :'unit_a_id'
+  ),
+  'service_role can upsert a profile for an existing auth user'
+);
+
+select lives_ok(
+  format(
+    $sql$
+      insert into public.profiles (id, full_name, role, primary_unit_id)
+      values (%L::uuid, %L, 'nutritionist', %L::uuid)
+      on conflict (id) do update
+      set
+        full_name = excluded.full_name,
+        role = excluded.role,
+        primary_unit_id = excluded.primary_unit_id
+    $sql$,
+    :'nutritionist_id',
+    'Perfil provisionado pela service role',
+    :'unit_a_id'
+  ),
+  'repeating the service_role profile upsert is idempotent'
+);
+
+select throws_ok(
+  format(
+    $sql$delete from public.profiles where id = %L::uuid$sql$,
+    :'nutritionist_id'
+  ),
+  '42501',
+  null,
+  'service_role cannot delete profiles'
+);
+
+reset role;
+
+select ok(
+  (
+    select count(*) = 1
+      and bool_and(full_name = 'Perfil provisionado pela service role')
+    from public.profiles
+    where id = :'nutritionist_id'
+  ),
+  'the idempotent service_role upsert persists exactly one valid profile'
+);
+
+select ok(
+  not has_table_privilege(
+    'service_role',
+    'public.units',
+    'SELECT,INSERT,UPDATE,DELETE'
+  )
+  and not has_table_privilege(
+    'service_role',
+    'public.unit_access_grants',
+    'SELECT,INSERT,UPDATE,DELETE'
+  )
+  and not has_table_privilege(
+    'service_role',
+    'public.audit_events',
+    'SELECT,INSERT,UPDATE,DELETE'
+  ),
+  'service_role receives no client CRUD privileges on other foundation tables'
+);
 
 set local role authenticated;
 
