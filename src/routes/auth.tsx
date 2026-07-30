@@ -38,11 +38,14 @@ function AuthPage() {
 
   const handleEmailAuth = async (type: "signin" | "signup") => {
     setLoading(true);
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
     try {
       if (type === "signup") {
         const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: cleanEmail,
+          password: cleanPassword,
           options: {
             emailRedirectTo: window.location.origin,
             data: {
@@ -56,14 +59,22 @@ function AuthPage() {
           // Salva perfil inicial
           await supabase.from("profiles").upsert({
             id: data.user.id,
-            full_name: fullName || email.split("@")[0],
+            full_name: fullName || cleanEmail.split("@")[0],
             role: "nutritionist",
           });
         }
         toast.success("Conta cadastrada! Verifique seu e-mail corporativo para confirmar.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        const { error } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: cleanPassword,
+        });
+        if (error) {
+          if (error.message.includes("Invalid login credentials")) {
+            throw new Error("E-mail ou senha incorretos. Verifique maiúsculas e espaços.");
+          }
+          throw error;
+        }
         toast.success("Acesso autorizado!");
         navigate({ to: "/app" });
       }
