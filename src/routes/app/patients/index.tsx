@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { getPatients, createPatient, deletePatient } from "@/lib/nutrition.functions";
 import { Button } from "@/components/ui/button";
