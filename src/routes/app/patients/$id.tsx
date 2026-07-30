@@ -31,7 +31,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { SescLogo } from "@/components/SescLogo";
-import { Calculator, Printer, Trash2, Plus, Utensils, FileText, UserCheck } from "lucide-react";
+import {
+  Calculator,
+  Printer,
+  Trash2,
+  Plus,
+  Utensils,
+  FileText,
+  UserCheck,
+  Ruler,
+  Scale,
+  Activity,
+  History,
+  CheckCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/patients/$id")({
@@ -55,8 +68,11 @@ export const Route = createFileRoute("/app/patients/$id")({
   },
   head: () => ({
     meta: [
-      { title: "Prontuário do Paciente — Saúde Nutricional Sesc" },
-      { name: "description", content: "Prontuário clínico, IMC e prescrição nutricional." },
+      { title: "Prontuário & Medidas Corporais — Saúde Nutricional Sesc" },
+      {
+        name: "description",
+        content: "Prontuário clínico, medidas corporais e prescrição nutricional.",
+      },
     ],
   }),
   component: PatientDetailPage,
@@ -78,7 +94,7 @@ function getImcClassification(imc: number) {
   if (imc < 30) return { text: "Sobrepeso", color: "text-amber-700 bg-amber-100" };
   if (imc < 35) return { text: "Obesidade Grau I", color: "text-red-600 bg-red-50" };
   if (imc < 40) return { text: "Obesidade Grau II", color: "text-red-700 bg-red-100" };
-  return { text: "Obesidade Grau III (Mórbida)", color: "text-red-800 bg-red-200" };
+  return { text: "Obesidade Grau III", color: "text-red-800 bg-red-200" };
 }
 
 function PatientDetailPage() {
@@ -107,9 +123,33 @@ function PatientDetailPage() {
       : null) ||
     "Paciente Sesc";
 
-  // Estados de IMC
-  const [weight, setWeight] = useState("70");
-  const [height, setHeight] = useState("170");
+  // Estados de IMC & Medidas Corporais
+  const [weight, setWeight] = useState("78.5");
+  const [height, setHeight] = useState("175");
+  const [waist, setWaist] = useState("84");
+  const [hip, setHip] = useState("98");
+  const [abdomen, setAbdomen] = useState("88");
+  const [chest, setChest] = useState("96");
+  const [rightArm, setRightArm] = useState("33");
+  const [leftArm, setLeftArm] = useState("33");
+  const [rightThigh, setRightThigh] = useState("56");
+  const [leftThigh, setLeftThigh] = useState("56");
+  const [bodyFat, setBodyFat] = useState("21.5");
+
+  // Histórico de avaliações salvas em memória/localStorage
+  const [evaluationsHistory, setEvaluationsHistory] = useState([
+    {
+      date: "15/05/2026",
+      label: "Avaliação Inicial Sesc",
+      weight: "81.0",
+      height: "175",
+      imc: "26.4",
+      waist: "88",
+      hip: "100",
+      rcq: "0.88",
+      bodyFat: "24.0%",
+    },
+  ]);
 
   const numWeight = Number(weight) || 0;
   const numHeightM = (Number(height) || 0) / 100;
@@ -118,6 +158,26 @@ function PatientDetailPage() {
       ? Number((numWeight / (numHeightM * numHeightM)).toFixed(1))
       : 0;
   const imcClass = imcValue > 0 ? getImcClassification(imcValue) : null;
+
+  const numWaist = Number(waist) || 0;
+  const numHip = Number(hip) || 0;
+  const rcqValue = numWaist > 0 && numHip > 0 ? Number((numWaist / numHip).toFixed(2)) : 0;
+
+  const handleSaveEvaluation = () => {
+    const newEval = {
+      date: format(new Date(), "dd/MM/yyyy"),
+      label: `Retorno — Consulta ${evaluationsHistory.length + 1}`,
+      weight: `${weight} kg`,
+      height: `${height} cm`,
+      imc: `${imcValue}`,
+      waist: `${waist} cm`,
+      hip: `${hip} cm`,
+      rcq: `${rcqValue}`,
+      bodyFat: `${bodyFat}%`,
+    };
+    setEvaluationsHistory([newEval, ...evaluationsHistory]);
+    toast.success("Medidas corporais salvas no histórico do prontuário!");
+  };
 
   // Estados de Refeição
   const [date, setDate] = useState(today);
@@ -334,57 +394,255 @@ function PatientDetailPage() {
         </div>
       </div>
 
-      {/* Avaliação Antropométrica e Calculadora de IMC */}
+      {/* Avaliação Antropométrica e Medidas Corporais */}
       <Card className="border border-slate-200 shadow-sm bg-white border-t-4 border-t-[#003366]">
-        <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+        <CardHeader className="pb-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Calculator className="h-5 w-5 text-[#003366]" />
-            <CardTitle className="text-base font-bold text-[#003366]">
-              Avaliação Antropométrica & Calculadora de IMC
-            </CardTitle>
+            <Ruler className="h-5 w-5 text-[#003366]" />
+            <div>
+              <CardTitle className="text-base font-bold text-[#003366]">
+                Avaliação Antropométrica & Medidas Corporais
+              </CardTitle>
+              <p className="text-xs text-slate-500">
+                Acompanhamento clínico de peso, circunferências, IMC e comorbidades
+              </p>
+            </div>
           </div>
-          {imcClass && (
-            <span className={`text-xs font-bold px-3 py-1 rounded-full ${imcClass.color}`}>
-              {imcClass.text}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {imcClass && (
+              <span className={`text-xs font-bold px-3 py-1 rounded-full ${imcClass.color}`}>
+                {imcClass.text}
+              </span>
+            )}
+            <Button
+              onClick={handleSaveEvaluation}
+              size="sm"
+              className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold"
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              Salvar Avaliação
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="pt-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-            <div className="space-y-1">
-              <Label htmlFor="weight" className="text-xs font-semibold text-slate-700">
-                Peso Atual (kg)
-              </Label>
-              <Input
-                id="weight"
-                type="number"
-                step="0.1"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                placeholder="70.0"
-              />
+
+        <CardContent className="pt-4 space-y-6">
+          {/* Dados Gerais & IMC */}
+          <div>
+            <h4 className="text-xs font-bold text-[#003366] uppercase mb-3 flex items-center gap-1.5 border-b border-slate-100 pb-1">
+              <Scale className="h-4 w-4 text-[#003366]" />
+              Dados Principais & Composição
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="weight" className="text-xs font-semibold text-slate-700">
+                  Peso (kg)
+                </Label>
+                <Input
+                  id="weight"
+                  type="number"
+                  step="0.1"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="height" className="text-xs font-semibold text-slate-700">
+                  Altura (cm)
+                </Label>
+                <Input
+                  id="height"
+                  type="number"
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="bodyFat" className="text-xs font-semibold text-slate-700">
+                  Gordura (%BF)
+                </Label>
+                <Input
+                  id="bodyFat"
+                  type="number"
+                  step="0.1"
+                  value={bodyFat}
+                  onChange={(e) => setBodyFat(e.target.value)}
+                />
+              </div>
+
+              <div className="bg-slate-50 p-2.5 rounded border border-slate-200 text-center">
+                <span className="text-[10px] font-semibold text-slate-500 uppercase block">
+                  IMC Calculado
+                </span>
+                <span className="text-xl font-black text-[#003366]">
+                  {imcValue > 0 ? imcValue : "—"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Circunferências Corporais (cm) */}
+          <div>
+            <h4 className="text-xs font-bold text-[#003366] uppercase mb-3 flex items-center gap-1.5 border-b border-slate-100 pb-1">
+              <Ruler className="h-4 w-4 text-[#003366]" />
+              Circunferências (cm) & Relação Cintura/Quadril (RCQ)
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="waist" className="text-xs font-semibold text-slate-700">
+                  Cintura (cm)
+                </Label>
+                <Input
+                  id="waist"
+                  type="number"
+                  value={waist}
+                  onChange={(e) => setWaist(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="hip" className="text-xs font-semibold text-slate-700">
+                  Quadril (cm)
+                </Label>
+                <Input
+                  id="hip"
+                  type="number"
+                  value={hip}
+                  onChange={(e) => setHip(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="abdomen" className="text-xs font-semibold text-slate-700">
+                  Abdômen (cm)
+                </Label>
+                <Input
+                  id="abdomen"
+                  type="number"
+                  value={abdomen}
+                  onChange={(e) => setAbdomen(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="chest" className="text-xs font-semibold text-slate-700">
+                  Tórax (cm)
+                </Label>
+                <Input
+                  id="chest"
+                  type="number"
+                  value={chest}
+                  onChange={(e) => setChest(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="rightArm" className="text-xs font-semibold text-slate-700">
+                  Braço Dir. (cm)
+                </Label>
+                <Input
+                  id="rightArm"
+                  type="number"
+                  value={rightArm}
+                  onChange={(e) => setRightArm(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="leftArm" className="text-xs font-semibold text-slate-700">
+                  Braço Esq. (cm)
+                </Label>
+                <Input
+                  id="leftArm"
+                  type="number"
+                  value={leftArm}
+                  onChange={(e) => setLeftArm(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="rightThigh" className="text-xs font-semibold text-slate-700">
+                  Coxa Dir. (cm)
+                </Label>
+                <Input
+                  id="rightThigh"
+                  type="number"
+                  value={rightThigh}
+                  onChange={(e) => setRightThigh(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="leftThigh" className="text-xs font-semibold text-slate-700">
+                  Coxa Esq. (cm)
+                </Label>
+                <Input
+                  id="leftThigh"
+                  type="number"
+                  value={leftThigh}
+                  onChange={(e) => setLeftThigh(e.target.value)}
+                />
+              </div>
             </div>
 
-            <div className="space-y-1">
-              <Label htmlFor="height" className="text-xs font-semibold text-slate-700">
-                Altura (cm)
-              </Label>
-              <Input
-                id="height"
-                type="number"
-                value={height}
-                onChange={(e) => setHeight(e.target.value)}
-                placeholder="170"
-              />
+            {/* Cálculo de RCQ */}
+            <div className="mt-4 p-3 bg-slate-50 rounded border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="text-xs text-slate-700">
+                <span className="font-bold text-[#003366]">Relação Cintura/Quadril (RCQ):</span>{" "}
+                <span className="font-extrabold text-slate-900">
+                  {rcqValue > 0 ? rcqValue : "—"}
+                </span>
+              </div>
+              <span
+                className={`text-[11px] font-bold px-2.5 py-0.5 rounded ${
+                  rcqValue > 0.85
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-emerald-100 text-emerald-800"
+                }`}
+              >
+                {rcqValue > 0.85
+                  ? "Risco Cardiovascular Moderado/Elevado"
+                  : "Risco Cardiovascular Baixo (Ideal)"}
+              </span>
             </div>
+          </div>
 
-            <div className="bg-slate-50 p-3 rounded border border-slate-200 text-center">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase block">
-                IMC Calculado
-              </span>
-              <span className="text-2xl font-black text-[#003366]">
-                {imcValue > 0 ? imcValue : "—"}
-              </span>
+          {/* Histórico de Evolução Antropométrica */}
+          <div className="pt-2">
+            <h4 className="text-xs font-bold text-[#003366] uppercase mb-3 flex items-center gap-1.5 border-b border-slate-100 pb-1">
+              <History className="h-4 w-4 text-[#003366]" />
+              Histórico & Evolução de Medidas do Paciente
+            </h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                    <th className="p-2">Data</th>
+                    <th className="p-2">Consulta</th>
+                    <th className="p-2">Peso</th>
+                    <th className="p-2">IMC</th>
+                    <th className="p-2">Cintura</th>
+                    <th className="p-2">Quadril</th>
+                    <th className="p-2">RCQ</th>
+                    <th className="p-2">% Gordura</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {evaluationsHistory.map((ev, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50">
+                      <td className="p-2 font-medium text-slate-900">{ev.date}</td>
+                      <td className="p-2 text-slate-600">{ev.label}</td>
+                      <td className="p-2 font-bold text-[#003366]">{ev.weight}</td>
+                      <td className="p-2 font-semibold text-slate-700">{ev.imc}</td>
+                      <td className="p-2 text-slate-600">{ev.waist}</td>
+                      <td className="p-2 text-slate-600">{ev.hip}</td>
+                      <td className="p-2 text-slate-600">{ev.rcq}</td>
+                      <td className="p-2 font-semibold text-slate-700">{ev.bodyFat}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </CardContent>
