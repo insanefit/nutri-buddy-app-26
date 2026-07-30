@@ -73,7 +73,7 @@ function AuthPage() {
           console.error("[Login Auth Error]:", error);
           if (error.message.includes("Invalid login credentials")) {
             throw new Error(
-              "Credenciais incorretas. Use o e-mail mtiago@sescamapa.com.br e a senha Sesc123456!",
+              "Credenciais incorretas. Use o e-mail mtiago@sescamapa.com.br e a senha Sesc@Amapa2026",
             );
           }
           throw error;
@@ -95,7 +95,7 @@ function AuthPage() {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: quickEmail,
-        password: "Sesc123456!",
+        password: "Sesc@Amapa2026",
       });
       if (error) throw error;
       if (data.session || data.user) {
