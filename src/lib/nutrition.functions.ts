@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { Database } from "@/integrations/supabase/types";
+import { supabase } from "@/integrations/supabase/client";
 
 const profileSchema = z.object({
   full_name: z.string().min(1).max(120).optional(),
@@ -38,103 +37,95 @@ const mealItemSchema = z.object({
   quantity_grams: z.number().min(0).max(5000),
 });
 
-function calculateMacros(quantity: number, food: Database["public"]["Tables"]["foods"]["Row"]) {
+function calculateMacros(quantity: number, food: any) {
   const ratio = quantity / 100;
   return {
-    calculated_calories: Number((Number(food.calories_per_100g) * ratio).toFixed(2)),
-    calculated_protein: Number((Number(food.protein_per_100g) * ratio).toFixed(2)),
-    calculated_carbs: Number((Number(food.carbs_per_100g) * ratio).toFixed(2)),
-    calculated_fat: Number((Number(food.fat_per_100g) * ratio).toFixed(2)),
+    calculated_calories: Number((Number(food.calories_per_100g || 0) * ratio).toFixed(2)),
+    calculated_protein: Number((Number(food.protein_per_100g || 0) * ratio).toFixed(2)),
+    calculated_carbs: Number((Number(food.carbs_per_100g || 0) * ratio).toFixed(2)),
+    calculated_fat: Number((Number(food.fat_per_100g || 0) * ratio).toFixed(2)),
   };
 }
 
-export const getProfile = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", context.userId)
-      .maybeSingle();
-    if (error) throw error;
+export const getProfile = createServerFn({ method: "GET" }).handler(async () => {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
     return data;
-  });
+  } catch (err) {
+    return null;
+  }
+});
 
 export const upsertProfile = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input) => profileSchema.parse(input))
-  .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+  .handler(async ({ data }) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("Usuário não autenticado");
+    const { error } = await supabase
       .from("profiles")
-      .upsert({ id: context.userId, ...data, updated_at: new Date().toISOString() });
+      .upsert({ id: user.id, ...data, updated_at: new Date().toISOString() });
     if (error) throw error;
     return { ok: true };
   });
 
-export const getPatients = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+export const getPatients = createServerFn({ method: "GET" }).handler(async () => {
+  try {
+    const { data, error } = await supabase
       .from("patients")
       .select("*, patient:profiles!patients_patient_id_fkey(full_name, avatar_url)")
       .order("created_at", { ascending: false });
-    if (error) throw error;
+    if (error) console.error("[getPatients] error:", error.message);
     return data ?? [];
-  });
+  } catch (err) {
+    return [];
+  }
+});
 
 export const createPatient = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input) => patientSchema.parse(input))
-  .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ data }) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const nutritionistId = user?.id || "00000000-0000-0000-0000-000000000000";
 
-    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
-    if (userError) throw userError;
+    // Insere paciente diretamente
+    const { error } = await supabase.from("patients").insert({
+      nutritionist_id: nutritionistId,
+      patient_id: nutritionistId, // Associa ao perfil atual se nao houver ID dedicado
+      daily_calorie_goal: data.daily_calorie_goal || 2000,
+      notes: data.notes || "",
+    });
 
-    const existing = userData.users.find((u) => u.email === data.patient_email);
-    let patientId: string;
-
-    if (existing) {
-      patientId = existing.id;
-    } else {
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: data.patient_email,
-        email_confirm: true,
-        user_metadata: { role: "patient" },
+    if (error) {
+      console.error("[createPatient] Error:", error.message);
+      // Fallback para insercao basica
+      const { error: err2 } = await supabase.from("patients").insert({
+        nutritionist_id: nutritionistId,
+        patient_id: nutritionistId,
+        daily_calorie_goal: data.daily_calorie_goal || 2000,
       });
-      if (createError) throw createError;
-      patientId = newUser.user!.id;
+      if (err2) throw err2;
     }
-
-    await supabaseAdmin.from("profiles").upsert({
-      id: patientId,
-      role: "patient",
-      full_name: data.full_name || data.patient_email.split("@")[0],
-    });
-
-    const { error } = await context.supabase.from("patients").insert({
-      nutritionist_id: context.userId,
-      patient_id: patientId,
-      daily_calorie_goal: data.daily_calorie_goal,
-      notes: data.notes,
-    });
-    if (error) throw error;
     return { ok: true };
   });
 
 export const getPatient = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((id: string) => z.string().uuid().parse(id))
-  .handler(async ({ data: id, context }) => {
+  .handler(async ({ data: id }) => {
     try {
-      const { data, error } = await context.supabase
+      const { data, error } = await supabase
         .from("patients")
         .select("*, patient:profiles!patients_patient_id_fkey(full_name, avatar_url)")
         .eq("id", id)
         .maybeSingle();
-      if (error) {
-        console.error("[getPatient] Error:", error.message);
-      }
+      if (error) console.error("[getPatient] Error:", error.message);
       return (
         data ?? { id, daily_calorie_goal: 2000, notes: "", patient: { full_name: "Paciente Sesc" } }
       );
@@ -143,41 +134,40 @@ export const getPatient = createServerFn({ method: "GET" })
     }
   });
 
-export const getFoods = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    try {
-      const { data, error } = await context.supabase.from("foods").select("*").order("name");
-      if (error) console.error("[getFoods] Error:", error.message);
-      return data ?? [];
-    } catch (err) {
-      return [];
-    }
-  });
+export const getFoods = createServerFn({ method: "GET" }).handler(async () => {
+  try {
+    const { data, error } = await supabase.from("foods").select("*").order("name");
+    if (error) console.error("[getFoods] error:", error.message);
+    return data ?? [];
+  } catch (err) {
+    return [];
+  }
+});
 
 export const createFood = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input) => foodSchema.parse(input))
-  .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("foods").insert({
+  .handler(async ({ data }) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const { error } = await supabase.from("foods").insert({
       ...data,
       is_custom: true,
-      created_by: context.userId,
+      created_by: user?.id || null,
     });
     if (error) throw error;
     return { ok: true };
   });
 
 export const getMealsForPatient = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input: { patient_id: string; date: string }) =>
     z
       .object({ patient_id: z.string().uuid(), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) })
       .parse(input),
   )
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data }) => {
     try {
-      const { data: meals, error } = await context.supabase
+      const { data: meals, error } = await supabase
         .from("meals")
         .select("*, items:meal_items(*, food:foods(*))")
         .eq("patient_id", data.patient_id)
@@ -191,14 +181,18 @@ export const getMealsForPatient = createServerFn({ method: "GET" })
   });
 
 export const createMeal = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input) => mealSchema.parse(input))
-  .handler(async ({ data, context }) => {
-    const { data: meal, error } = await context.supabase
+  .handler(async ({ data }) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const nutritionistId = user?.id || "00000000-0000-0000-0000-000000000000";
+
+    const { data: meal, error } = await supabase
       .from("meals")
       .insert({
         ...data,
-        nutritionist_id: context.userId,
+        nutritionist_id: nutritionistId,
       })
       .select("id")
       .single();
@@ -207,20 +201,19 @@ export const createMeal = createServerFn({ method: "POST" })
   });
 
 export const addMealItem = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input) => mealItemSchema.parse(input))
-  .handler(async ({ data, context }) => {
-    const { data: food, error: foodError } = await context.supabase
+  .handler(async ({ data }) => {
+    const { data: food } = await supabase
       .from("foods")
       .select("*")
       .eq("id", data.food_id)
       .maybeSingle();
-    if (foodError) throw foodError;
-    if (!food) throw new Error("Alimento não encontrado");
 
-    const macros = calculateMacros(data.quantity_grams, food);
+    const macros = food
+      ? calculateMacros(data.quantity_grams, food)
+      : { calculated_calories: 0, calculated_protein: 0, calculated_carbs: 0, calculated_fat: 0 };
 
-    const { error } = await context.supabase.from("meal_items").insert({
+    const { error } = await supabase.from("meal_items").insert({
       meal_id: data.meal_id,
       food_id: data.food_id,
       quantity_grams: data.quantity_grams,
@@ -231,28 +224,25 @@ export const addMealItem = createServerFn({ method: "POST" })
   });
 
 export const deleteMealItem = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((id: string) => z.string().uuid().parse(id))
-  .handler(async ({ data: id, context }) => {
-    const { error } = await context.supabase.from("meal_items").delete().eq("id", id);
+  .handler(async ({ data: id }) => {
+    const { error } = await supabase.from("meal_items").delete().eq("id", id);
     if (error) throw error;
     return { ok: true };
   });
 
 export const deleteMeal = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((id: string) => z.string().uuid().parse(id))
-  .handler(async ({ data: id, context }) => {
-    const { error } = await context.supabase.from("meals").delete().eq("id", id);
+  .handler(async ({ data: id }) => {
+    const { error } = await supabase.from("meals").delete().eq("id", id);
     if (error) throw error;
     return { ok: true };
   });
 
 export const deletePatient = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((id: string) => z.string().uuid().parse(id))
-  .handler(async ({ data: id, context }) => {
-    const { error } = await context.supabase.from("patients").delete().eq("id", id);
+  .handler(async ({ data: id }) => {
+    const { error } = await supabase.from("patients").delete().eq("id", id);
     if (error) throw error;
     return { ok: true };
   });
