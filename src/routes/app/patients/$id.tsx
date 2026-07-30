@@ -1,5 +1,5 @@
 import { createFileRoute, useParams, useNavigate } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -104,17 +104,37 @@ function PatientDetailPage() {
   const navigate = useNavigate();
   const today = format(new Date(), "yyyy-MM-dd");
 
-  const { data: patient } = useSuspenseQuery({
+  const { data: patient } = useQuery({
     queryKey: ["patient", id],
-    queryFn: () => getPatient({ data: id }),
+    queryFn: async () => {
+      try {
+        return await getPatient({ data: id });
+      } catch (err) {
+        return null;
+      }
+    },
   });
-  const { data: meals, refetch: refetchMeals } = useSuspenseQuery({
+  const { data: meals, refetch: refetchMeals } = useQuery({
     queryKey: ["meals", id, today],
-    queryFn: () => getMealsForPatient({ data: { patient_id: id, date: today } }),
+    queryFn: async () => {
+      try {
+        return await getMealsForPatient({ data: { patient_id: id, date: today } });
+      } catch (err) {
+        return [];
+      }
+    },
+    initialData: [],
   });
-  const { data: foods } = useSuspenseQuery({
+  const { data: foods } = useQuery({
     queryKey: ["foods"],
-    queryFn: () => getFoods({ data: undefined }),
+    queryFn: async () => {
+      try {
+        return await getFoods({ data: undefined });
+      } catch (err) {
+        return [];
+      }
+    },
+    initialData: [],
   });
 
   const patientName =

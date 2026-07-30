@@ -38,9 +38,16 @@ export const Route = createFileRoute("/app/patients/")({
 });
 
 function PatientsPage() {
-  const { data: patients, refetch } = useSuspenseQuery({
+  const { data: patients, refetch } = useQuery({
     queryKey: ["patients"],
-    queryFn: () => getPatients({ data: undefined }),
+    queryFn: async () => {
+      try {
+        return await getPatients({ data: undefined });
+      } catch (err) {
+        return [];
+      }
+    },
+    initialData: [],
   });
 
   const [open, setOpen] = useState(false);

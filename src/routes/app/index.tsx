@@ -24,9 +24,16 @@ export const Route = createFileRoute("/app/")({
 });
 
 function DashboardPage() {
-  const { data: patients } = useSuspenseQuery({
+  const { data: patients } = useQuery({
     queryKey: ["patients"],
-    queryFn: () => getPatients({ data: undefined }),
+    queryFn: async () => {
+      try {
+        return await getPatients({ data: undefined });
+      } catch (err) {
+        return [];
+      }
+    },
+    initialData: [],
   });
 
   return (

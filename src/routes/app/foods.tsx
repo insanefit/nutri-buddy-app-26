@@ -34,9 +34,16 @@ export const Route = createFileRoute("/app/foods")({
 });
 
 function FoodsPage() {
-  const { data: foods, refetch } = useSuspenseQuery({
+  const { data: foods, refetch } = useQuery({
     queryKey: ["foods"],
-    queryFn: () => getFoods({ data: undefined }),
+    queryFn: async () => {
+      try {
+        return await getFoods({ data: undefined });
+      } catch (err) {
+        return [];
+      }
+    },
+    initialData: [],
   });
 
   const [open, setOpen] = useState(false);
