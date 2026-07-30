@@ -47,29 +47,33 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-slate-50 px-4 py-12">
+      <div className="max-w-md w-full text-center bg-white p-8 rounded-xl border border-slate-200 shadow-md space-y-4">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-[#003366]">
+          <SescLogo className="h-8" />
+        </div>
+        <h1 className="text-lg font-bold text-[#003366]">
+          Carregando Prontuário Saúde Nutricional
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+        <p className="text-xs text-slate-600 leading-relaxed">
+          Recarregando sessão de atendimento. Se a página não atualizar automaticamente, clique
+          abaixo para tentar novamente ou retornar ao painel Sesc.
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
           <button
             onClick={() => {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-[#003366] px-5 py-2 text-xs font-bold text-white transition-colors hover:bg-[#002244]"
           >
-            Try again
+            Tentar Novamente
           </button>
           <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            href="/app"
+            className="w-full sm:w-auto inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
           >
-            Go home
+            Voltar ao Painel Sesc
           </a>
         </div>
       </div>

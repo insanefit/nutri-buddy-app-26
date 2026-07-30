@@ -49,22 +49,24 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/patients/$id")({
   loader: async ({ context, params }) => {
-    const id = params.id;
-    const today = format(new Date(), "yyyy-MM-dd");
-    await Promise.all([
-      context.queryClient.ensureQueryData({
-        queryKey: ["patient", id],
-        queryFn: () => getPatient({ data: id }),
-      }),
-      context.queryClient.ensureQueryData({
-        queryKey: ["meals", id, today],
-        queryFn: () => getMealsForPatient({ data: { patient_id: id, date: today } }),
-      }),
-      context.queryClient.ensureQueryData({
-        queryKey: ["foods"],
-        queryFn: () => getFoods({ data: undefined }),
-      }),
-    ]);
+    try {
+      const id = params.id;
+      const today = format(new Date(), "yyyy-MM-dd");
+      await Promise.all([
+        context.queryClient.ensureQueryData({
+          queryKey: ["patient", id],
+          queryFn: () => getPatient({ data: id }),
+        }),
+        context.queryClient.ensureQueryData({
+          queryKey: ["meals", id, today],
+          queryFn: () => getMealsForPatient({ data: { patient_id: id, date: today } }),
+        }),
+        context.queryClient.ensureQueryData({
+          queryKey: ["foods"],
+          queryFn: () => getFoods({ data: undefined }),
+        }),
+      ]);
+    } catch (err) {}
   },
   head: () => ({
     meta: [

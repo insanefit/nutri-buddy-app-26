@@ -18,10 +18,12 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/patients/")({
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData({
-      queryKey: ["patients"],
-      queryFn: () => getPatients({ data: undefined }),
-    });
+    try {
+      await context.queryClient.ensureQueryData({
+        queryKey: ["patients"],
+        queryFn: () => getPatients({ data: undefined }),
+      });
+    } catch (err) {}
   },
   head: () => ({
     meta: [
