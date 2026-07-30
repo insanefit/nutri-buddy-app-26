@@ -126,7 +126,7 @@ function AuthPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="profissional@sesc.com.br"
+                    placeholder="profissional@sescamapa.com.br"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -190,7 +190,7 @@ function AuthPage() {
                   <Input
                     id="signup-email"
                     type="email"
-                    placeholder="profissional@sesc.com.br"
+                    placeholder="profissional@sescamapa.com.br"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -261,11 +261,16 @@ function AuthPage() {
           <div className="mt-6 pt-4 border-t border-slate-100 text-center space-y-2">
             <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500 font-medium">
               <Shield className="h-3.5 w-3.5 text-[#003366]" />
-              Acesso individual e auditado por unidade
+              Acesso individual Sesc Amapá
             </div>
-            <p className="text-[11px] text-slate-400 leading-tight">
-              Em caso de dúvidas sobre seu credenciamento, entre em contato com a coordenação da sua
-              unidade Sesc.
+            <p className="text-[11px] text-slate-500 leading-tight">
+              Em caso de dúvidas sobre credenciamento de acesso, entre em contato com a coordenação:{" "}
+              <a
+                href="mailto:mtiago@sescamapa.com.br"
+                className="font-semibold text-[#003366] hover:underline"
+              >
+                mtiago@sescamapa.com.br
+              </a>
             </p>
           </div>
         </CardContent>
