@@ -39,11 +39,17 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error }: { error: Error }) {
   console.error(error);
-  const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    if (typeof window !== "undefined") {
+      const key = "sesc_auto_recover";
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, "true");
+        window.location.href = "/app";
+      }
+    }
   }, [error]);
 
   return (
@@ -52,28 +58,20 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-[#003366]">
           <SescLogo className="h-8" />
         </div>
-        <h1 className="text-lg font-bold text-[#003366]">
-          Carregando Prontuário Saúde Nutricional
-        </h1>
-        <p className="text-xs text-slate-600 leading-relaxed">
-          Recarregando sessão de atendimento. Se a página não atualizar automaticamente, clique
-          abaixo para tentar novamente ou retornar ao painel Sesc.
-        </p>
-        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
-          <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
-            className="w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-[#003366] px-5 py-2 text-xs font-bold text-white transition-colors hover:bg-[#002244]"
-          >
-            Tentar Novamente
-          </button>
+        <h1 className="text-lg font-bold text-[#003366]">Saúde Nutricional Sesc</h1>
+        <p className="text-xs text-slate-600 leading-relaxed">Abrindo painel de atendimento...</p>
+        <div className="pt-2 flex justify-center">
           <a
             href="/app"
-            className="w-full sm:w-auto inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                sessionStorage.clear();
+                window.location.href = "/app";
+              }
+            }}
+            className="inline-flex items-center justify-center rounded-md bg-[#003366] px-6 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#002244] shadow"
           >
-            Voltar ao Painel Sesc
+            Acessar Prontuário Sesc
           </a>
         </div>
       </div>
