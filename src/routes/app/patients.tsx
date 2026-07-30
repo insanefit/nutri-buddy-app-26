@@ -195,17 +195,14 @@ function PatientsPage() {
                     Cadastrado em: {new Date(patientItem.created_at).toLocaleDateString("pt-BR")}
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-[#003366] text-[#003366] hover:bg-blue-50 font-medium text-xs flex items-center justify-center gap-1.5"
-                  asChild
+                <Link
+                  to="/app/patients/$id"
+                  params={{ id: patientItem.id }}
+                  className="w-full border border-[#003366] text-[#003366] hover:bg-[#003366] hover:text-white transition-colors rounded-md py-2 px-3 font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm block text-center"
                 >
-                  <Link to="/app/patients/$id" params={{ id: patientItem.id }}>
-                    <FileText className="h-3.5 w-3.5" />
-                    Abrir Prontuário Clínico
-                  </Link>
-                </Button>
+                  <FileText className="h-3.5 w-3.5 inline" />
+                  Abrir Prontuário Clínico
+                </Link>
               </CardContent>
             </Card>
           );

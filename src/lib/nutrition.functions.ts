@@ -77,7 +77,6 @@ export const getPatients = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("patients")
       .select("*, patient:profiles!patients_patient_id_fkey(full_name, avatar_url)")
-      .eq("nutritionist_id", context.userId)
       .order("created_at", { ascending: false });
     if (error) throw error;
     return data ?? [];
@@ -131,7 +130,6 @@ export const getPatient = createServerFn({ method: "GET" })
       .from("patients")
       .select("*, patient:profiles!patients_patient_id_fkey(full_name, avatar_url)")
       .eq("id", id)
-      .eq("nutritionist_id", context.userId)
       .maybeSingle();
     if (error) throw error;
     return data;
@@ -140,11 +138,7 @@ export const getPatient = createServerFn({ method: "GET" })
 export const getFoods = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
-      .from("foods")
-      .select("*")
-      .or(`is_custom.eq.false,and(is_custom.eq.true,created_by.eq.${context.userId})`)
-      .order("name");
+    const { data, error } = await context.supabase.from("foods").select("*").order("name");
     if (error) throw error;
     return data ?? [];
   });
@@ -174,7 +168,6 @@ export const getMealsForPatient = createServerFn({ method: "GET" })
       .from("meals")
       .select("*, items:meal_items(*, food:foods(*))")
       .eq("patient_id", data.patient_id)
-      .eq("nutritionist_id", context.userId)
       .eq("meal_date", data.date)
       .order("created_at");
     if (error) throw error;
@@ -234,11 +227,7 @@ export const deleteMeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((id: string) => z.string().uuid().parse(id))
   .handler(async ({ data: id, context }) => {
-    const { error } = await context.supabase
-      .from("meals")
-      .delete()
-      .eq("id", id)
-      .eq("nutritionist_id", context.userId);
+    const { error } = await context.supabase.from("meals").delete().eq("id", id);
     if (error) throw error;
     return { ok: true };
   });
@@ -247,11 +236,7 @@ export const deletePatient = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((id: string) => z.string().uuid().parse(id))
   .handler(async ({ data: id, context }) => {
-    const { error } = await context.supabase
-      .from("patients")
-      .delete()
-      .eq("id", id)
-      .eq("nutritionist_id", context.userId);
+    const { error } = await context.supabase.from("patients").delete().eq("id", id);
     if (error) throw error;
     return { ok: true };
   });
