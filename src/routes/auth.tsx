@@ -57,7 +57,7 @@ function AuthPage() {
           await supabase.from("profiles").upsert({
             id: data.user.id,
             full_name: fullName || email.split("@")[0],
-            role: role,
+            role: "nutritionist",
           });
         }
         toast.success("Conta cadastrada! Verifique seu e-mail corporativo para confirmar.");
