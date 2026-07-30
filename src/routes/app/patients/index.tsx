@@ -160,7 +160,13 @@ function PatientsPage() {
       {/* Grid de Cards dos Pacientes */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {patients?.map((patientItem) => {
-          const patientName = (patientItem.patient as any)?.full_name || "Paciente sem nome";
+          const patientName =
+            (patientItem.patient as any)?.full_name ||
+            (patientItem.profile as any)?.full_name ||
+            (patientItem.notes && patientItem.notes.includes("|")
+              ? patientItem.notes.split("|")[0].replace("Paciente", "").trim()
+              : null) ||
+            "Paciente Sesc";
           return (
             <Card
               key={patientItem.id}

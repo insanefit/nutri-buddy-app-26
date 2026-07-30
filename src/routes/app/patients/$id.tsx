@@ -99,7 +99,13 @@ function PatientDetailPage() {
     queryFn: () => getFoods({ data: undefined }),
   });
 
-  const patientName = (patient?.patient as any)?.full_name || "Paciente Sesc";
+  const patientName =
+    (patient?.patient as any)?.full_name ||
+    (patient?.profile as any)?.full_name ||
+    (patient?.notes && patient.notes.includes("|")
+      ? patient.notes.split("|")[0].replace("Paciente", "").trim()
+      : null) ||
+    "Paciente Sesc";
 
   // Estados de IMC
   const [weight, setWeight] = useState("70");
