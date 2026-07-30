@@ -65,21 +65,26 @@ function AuthPage() {
         }
         toast.success("Conta cadastrada! Verifique seu e-mail corporativo para confirmar.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
           password: cleanPassword,
         });
         if (error) {
+          console.error("[Login Auth Error]:", error);
           if (error.message.includes("Invalid login credentials")) {
-            throw new Error("E-mail ou senha incorretos. Verifique maiúsculas e espaços.");
+            throw new Error(
+              "Credenciais incorretas. Use o e-mail mtiago@sescamapa.com.br e a senha Sesc123456!",
+            );
           }
           throw error;
         }
-        toast.success("Acesso autorizado!");
-        navigate({ to: "/app" });
+        if (data.session) {
+          toast.success("Acesso autorizado!");
+          navigate({ to: "/app" });
+        }
       }
     } catch (err: any) {
-      toast.error(err.message || "Erro na autenticação. Verifique suas credenciais.");
+      toast.error(err.message || "Erro de conexão ao autenticar.");
     } finally {
       setLoading(false);
     }
