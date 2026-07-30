@@ -81,16 +81,39 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Saúde Nutricional Sesc" },
+      { title: "Saúde Nutricional Sesc — Prontuário Clínico & Prescrição" },
       {
         name: "description",
         content:
-          "Piloto Saúde Nutricional Sesc — Atendimento clínico, prontuário e acompanhamento nutricional.",
+          "Sistema Institucional de Prontuário Clínico, Avaliação Antropométrica e Prescrição Nutricional — Sesc Amapá.",
       },
       { name: "author", content: "Saúde Nutricional Sesc" },
+      { property: "og:site_name", content: "Saúde Nutricional Sesc" },
       { property: "og:title", content: "Saúde Nutricional Sesc" },
-      { property: "og:description", content: "Atendimento clínico e acompanhamento nutricional." },
+      {
+        property: "og:description",
+        content:
+          "Sistema Institucional de Prontuário Clínico, Avaliação Antropométrica e Prescrição Nutricional — Sesc Amapá.",
+      },
+      {
+        property: "og:image",
+        content: "https://saude-nutricional-sesc.vercel.app/og-image-sesc.png",
+      },
+      { property: "og:image:type", content: "image/png" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
       { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Saúde Nutricional Sesc" },
+      {
+        name: "twitter:description",
+        content:
+          "Sistema Institucional de Prontuário Clínico, Avaliação Antropométrica e Prescrição Nutricional — Sesc Amapá.",
+      },
+      {
+        name: "twitter:image",
+        content: "https://saude-nutricional-sesc.vercel.app/og-image-sesc.png",
+      },
     ],
     links: [
       {
