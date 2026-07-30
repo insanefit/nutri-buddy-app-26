@@ -10,7 +10,7 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { SescLogo } from "@/components/SescLogo";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ClipboardList, Users, Utensils, BookOpen, LogOut } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
