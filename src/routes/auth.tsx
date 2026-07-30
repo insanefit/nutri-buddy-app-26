@@ -90,6 +90,25 @@ function AuthPage() {
     }
   };
 
+  const handleQuickLogin = async (quickEmail: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: quickEmail,
+        password: "Sesc123456!",
+      });
+      if (error) throw error;
+      if (data.session || data.user) {
+        toast.success("Acesso autorizado!");
+        window.location.href = "/app";
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Erro no acesso rápido.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12 bg-slate-50">
       <Card className="w-full max-w-md border-t-8 border-t-[#003366] border-slate-200 shadow-lg bg-white">
@@ -173,6 +192,25 @@ function AuthPage() {
                   {loading ? "Autenticando..." : "Entrar no Sistema"}
                 </Button>
               </form>
+
+              <div className="pt-2 space-y-2">
+                <div className="relative flex py-1 items-center">
+                  <div className="flex-grow border-t border-slate-200"></div>
+                  <span className="flex-shrink mx-2 text-[10px] uppercase font-bold text-slate-400">
+                    Ou Acesso Rápido Sesc
+                  </span>
+                  <div className="flex-grow border-t border-slate-200"></div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleQuickLogin("mtiago@sescamapa.com.br")}
+                  className="w-full border-[#003366] text-[#003366] hover:bg-blue-50 text-xs font-semibold py-2"
+                  disabled={loading}
+                >
+                  ⚡ Entrar com 1-Clique (Coordenação Sesc)
+                </Button>
+              </div>
             </TabsContent>
 
             {/* Form Cadastrar */}
