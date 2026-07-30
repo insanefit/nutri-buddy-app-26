@@ -78,9 +78,9 @@ function AuthPage() {
           }
           throw error;
         }
-        if (data.session) {
+        if (data.session || data.user) {
           toast.success("Acesso autorizado!");
-          navigate({ to: "/app" });
+          window.location.href = "/app";
         }
       }
     } catch (err: any) {
