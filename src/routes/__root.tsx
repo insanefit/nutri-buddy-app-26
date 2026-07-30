@@ -246,8 +246,9 @@ function Header() {
                   queryClient.clear();
                   await supabase.auth.signOut();
                 }}
-                className="ml-2 px-3 py-1.5 text-xs font-semibold bg-amber-400 text-slate-900 hover:bg-amber-300 rounded transition-colors shadow-sm"
+                className="ml-2 px-3 py-1.5 text-xs font-semibold bg-amber-400 text-slate-900 hover:bg-amber-300 rounded transition-colors shadow-sm flex items-center gap-1"
               >
+                <LogOut className="h-3.5 w-3.5" />
                 Sair
               </button>
             </>
@@ -294,30 +295,34 @@ function Header() {
           <Link
             to="/app"
             onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 text-sm font-semibold text-white hover:bg-[#003366] rounded"
+            className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold text-white hover:bg-[#003366] rounded"
           >
-            📋 Início / Prontuários
+            <ClipboardList className="h-4 w-4 text-amber-300" />
+            Início / Prontuários
           </Link>
           <Link
             to="/app/patients"
             onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 text-sm font-semibold text-white hover:bg-[#003366] rounded"
+            className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold text-white hover:bg-[#003366] rounded"
           >
-            👥 Pacientes
+            <Users className="h-4 w-4 text-amber-300" />
+            Pacientes
           </Link>
           <Link
             to="/app/foods"
             onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 text-sm font-semibold text-white hover:bg-[#003366] rounded"
+            className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold text-white hover:bg-[#003366] rounded"
           >
-            🥗 Tabela de Alimentos
+            <Utensils className="h-4 w-4 text-amber-300" />
+            Tabela de Alimentos
           </Link>
           <Link
             to="/app/orientations"
             onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 text-sm font-semibold text-white hover:bg-[#003366] rounded"
+            className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold text-white hover:bg-[#003366] rounded"
           >
-            📖 Orientações MS
+            <BookOpen className="h-4 w-4 text-amber-300" />
+            Orientações MS
           </Link>
           <div className="pt-2 border-t border-blue-800">
             <button
@@ -327,9 +332,10 @@ function Header() {
                 queryClient.clear();
                 await supabase.auth.signOut();
               }}
-              className="w-full text-left px-3 py-2 text-xs font-bold bg-amber-400 text-slate-900 rounded"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold bg-amber-400 text-slate-900 rounded"
             >
-              🚪 Sair da Conta
+              <LogOut className="h-4 w-4" />
+              Sair da Conta
             </button>
           </div>
         </div>
