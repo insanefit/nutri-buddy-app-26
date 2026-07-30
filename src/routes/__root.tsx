@@ -10,6 +10,7 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { SescLogo } from "@/components/SescLogo";
+import { Menu, X } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -181,6 +182,7 @@ function RootComponent() {
 
 function Header() {
   const [user, setUser] = useState<User | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -201,16 +203,17 @@ function Header() {
             <SescLogo className="h-8" />
           </div>
           <div className="border-l border-blue-800/80 pl-3">
-            <span className="text-base font-bold tracking-tight text-white block leading-tight">
+            <span className="text-sm sm:text-base font-bold tracking-tight text-white block leading-tight">
               Saúde Nutricional
             </span>
-            <span className="text-[10px] text-amber-300 uppercase tracking-widest font-semibold block">
+            <span className="text-[9px] sm:text-[10px] text-amber-300 uppercase tracking-widest font-semibold block">
               Prontuário Clínico
             </span>
           </div>
         </Link>
 
-        <nav className="flex items-center gap-2 sm:gap-4">
+        {/* Menu Desktop */}
+        <nav className="hidden md:flex items-center gap-2 sm:gap-4">
           {user ? (
             <>
               <Link
@@ -258,7 +261,79 @@ function Header() {
             </Link>
           )}
         </nav>
+
+        {/* Botão do Menu Hambúrguer Mobile */}
+        <div className="flex md:hidden items-center gap-2">
+          {user ? (
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 text-white hover:bg-[#002855] rounded-md focus:outline-none"
+              aria-label="Abrir menu"
+            >
+              {mobileMenuOpen ? (
+                <X className="h-6 w-6 text-amber-400" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </button>
+          ) : (
+            <Link
+              to="/auth"
+              search={{ mode: "signin" }}
+              className="inline-flex items-center justify-center rounded bg-[#FFCC00] px-3 py-1 text-xs font-bold text-[#003366]"
+            >
+              Entrar
+            </Link>
+          )}
+        </div>
       </div>
+
+      {/* Drawer do Menu Mobile */}
+      {mobileMenuOpen && user && (
+        <div className="md:hidden border-t border-blue-900/80 bg-[#002855] px-4 pt-3 pb-5 space-y-2 shadow-inner">
+          <Link
+            to="/app"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 text-sm font-semibold text-white hover:bg-[#003366] rounded"
+          >
+            📋 Início / Prontuários
+          </Link>
+          <Link
+            to="/app/patients"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 text-sm font-semibold text-white hover:bg-[#003366] rounded"
+          >
+            👥 Pacientes
+          </Link>
+          <Link
+            to="/app/foods"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 text-sm font-semibold text-white hover:bg-[#003366] rounded"
+          >
+            🥗 Tabela de Alimentos
+          </Link>
+          <Link
+            to="/app/orientations"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 text-sm font-semibold text-white hover:bg-[#003366] rounded"
+          >
+            📖 Orientações MS
+          </Link>
+          <div className="pt-2 border-t border-blue-800">
+            <button
+              onClick={async () => {
+                setMobileMenuOpen(false);
+                await queryClient.cancelQueries();
+                queryClient.clear();
+                await supabase.auth.signOut();
+              }}
+              className="w-full text-left px-3 py-2 text-xs font-bold bg-amber-400 text-slate-900 rounded"
+            >
+              🚪 Sair da Conta
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
