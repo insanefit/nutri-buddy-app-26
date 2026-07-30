@@ -1,4 +1,4 @@
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import { createFileRoute, useParams, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { format } from "date-fns";
@@ -10,6 +10,7 @@ import {
   createMeal,
   addMealItem,
   deleteMeal,
+  deletePatient,
 } from "@/lib/nutrition.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { SescLogo } from "@/components/SescLogo";
+import { Calculator, Printer, Trash2, Plus, Utensils, FileText, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/patients/$id")({
@@ -52,8 +55,8 @@ export const Route = createFileRoute("/app/patients/$id")({
   },
   head: () => ({
     meta: [
-      { title: "Paciente — NutriAvalia" },
-      { name: "description", content: "Diário alimentar do paciente." },
+      { title: "Prontuário do Paciente — Saúde Nutricional Sesc" },
+      { name: "description", content: "Prontuário clínico, IMC e prescrição nutricional." },
     ],
   }),
   component: PatientDetailPage,
@@ -68,8 +71,19 @@ const MEAL_NAMES = [
   { value: "Ceia", label: "Ceia" },
 ];
 
+function getImcClassification(imc: number) {
+  if (imc < 18.5) return { text: "Baixo Peso", color: "text-amber-600 bg-amber-50" };
+  if (imc < 25)
+    return { text: "Peso Adequado (Eutrofia)", color: "text-emerald-700 bg-emerald-50" };
+  if (imc < 30) return { text: "Sobrepeso", color: "text-amber-700 bg-amber-100" };
+  if (imc < 35) return { text: "Obesidade Grau I", color: "text-red-600 bg-red-50" };
+  if (imc < 40) return { text: "Obesidade Grau II", color: "text-red-700 bg-red-100" };
+  return { text: "Obesidade Grau III (Mórbida)", color: "text-red-800 bg-red-200" };
+}
+
 function PatientDetailPage() {
   const { id } = useParams({ from: "/app/patients/$id" });
+  const navigate = useNavigate();
   const today = format(new Date(), "yyyy-MM-dd");
 
   const { data: patient } = useSuspenseQuery({
@@ -85,11 +99,30 @@ function PatientDetailPage() {
     queryFn: () => getFoods({ data: undefined }),
   });
 
+  const patientName = (patient?.patient as any)?.full_name || "Paciente Sesc";
+
+  // Estados de IMC
+  const [weight, setWeight] = useState("70");
+  const [height, setHeight] = useState("170");
+
+  const numWeight = Number(weight) || 0;
+  const numHeightM = (Number(height) || 0) / 100;
+  const imcValue =
+    numWeight > 0 && numHeightM > 0
+      ? Number((numWeight / (numHeightM * numHeightM)).toFixed(1))
+      : 0;
+  const imcClass = imcValue > 0 ? getImcClassification(imcValue) : null;
+
+  // Estados de Refeição
   const [date, setDate] = useState(today);
   const [mealName, setMealName] = useState("Café da manhã");
   const [selectedFood, setSelectedFood] = useState("");
   const [quantity, setQuantity] = useState("100");
-  const [open, setOpen] = useState(false);
+  const [openMealDialog, setOpenMealDialog] = useState(false);
+  const [openPrescriptionDialog, setOpenPrescriptionDialog] = useState(false);
+  const [prescriptionNotes, setPrescriptionNotes] = useState(
+    "Mastigar devagar. Evitar ingestão de líquidos durante as refeições principais. Seguir orientações do Guia Alimentar para a População Brasileira.",
+  );
   const [loading, setLoading] = useState(false);
 
   const handleAddMeal = async (e: React.FormEvent) => {
@@ -108,10 +141,10 @@ function PatientDetailPage() {
           },
         });
       }
-      toast.success("Refeição registrada");
+      toast.success("Refeição registrada!");
       setSelectedFood("");
       setQuantity("100");
-      setOpen(false);
+      setOpenMealDialog(false);
       refetchMeals();
     } catch (err: any) {
       toast.error(err.message || "Erro ao registrar refeição");
@@ -131,6 +164,17 @@ function PatientDetailPage() {
     }
   };
 
+  const handleDeletePatientCurrent = async () => {
+    if (!confirm(`Tem certeza que deseja excluir o prontuário de ${patientName}?`)) return;
+    try {
+      await deletePatient({ data: id });
+      toast.success("Prontuário excluído com sucesso!");
+      navigate({ to: "/app/patients" });
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao excluir paciente");
+    }
+  };
+
   const totals = meals?.reduce(
     (acc, meal) => {
       meal.items?.forEach((item: any) => {
@@ -145,133 +189,359 @@ function PatientDetailPage() {
   );
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-          {(patient?.patient as any)?.full_name || "Paciente"}
-        </h1>
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+      {/* Cabeçalho do Prontuário Clínico */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-[#003366]">{patientName}</h1>
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-blue-100 text-[#003366]">
+              Prontuário Ativo
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Meta Calórica Recomendada:{" "}
+            <strong>{patient?.daily_calorie_goal || 2000} kcal/dia</strong>
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Botão de Emitir Receita */}
+          <Dialog open={openPrescriptionDialog} onOpenChange={setOpenPrescriptionDialog}>
+            <DialogTrigger asChild>
+              <Button className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold gap-1.5">
+                <Printer className="h-4 w-4" />
+                Emitir Receita / Prescrição
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-bold text-[#003366] flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-[#003366]" />
+                  Prescrição Nutricional Sesc
+                </DialogTitle>
+              </DialogHeader>
+
+              {/* Documento Imprimível */}
+              <div className="p-6 border border-slate-300 rounded bg-white space-y-6 text-slate-800 my-2 shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+                  <SescLogo className="h-12" />
+                  <div className="text-right">
+                    <h3 className="font-extrabold text-[#003366] text-sm uppercase">
+                      Saúde Nutricional Sesc
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Unidade de Atendimento Clínico — Amapá
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-3 rounded border border-slate-100">
+                  <div>
+                    <span className="font-bold text-slate-600 block">PACIENTE:</span>
+                    <span className="text-slate-900 font-semibold">{patientName}</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-600 block">DATA DA EMISSÃO:</span>
+                    <span className="text-slate-900">{format(new Date(), "dd/MM/yyyy")}</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-600 block">PESO / ALTURA:</span>
+                    <span className="text-slate-900">
+                      {weight} kg | {height} cm (IMC: {imcValue} - {imcClass?.text})
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-600 block">META CALÓRICA:</span>
+                    <span className="text-slate-900 font-semibold">
+                      {patient?.daily_calorie_goal || 2000} kcal/dia
+                    </span>
+                  </div>
+                </div>
+
+                {/* Plano de Refeições Prescritas */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold text-[#003366] uppercase border-b border-slate-200 pb-1">
+                    Plano Alimentar Prescrito
+                  </h4>
+                  {meals && meals.length > 0 ? (
+                    <div className="space-y-2">
+                      {meals.map((m) => (
+                        <div key={m.id} className="text-xs border-b border-slate-100 pb-1">
+                          <span className="font-bold text-[#003366]">{m.name}:</span>{" "}
+                          {m.items
+                            ?.map((it: any) => `${it.food?.name} (${it.quantity_grams}g)`)
+                            .join(", ") || "Sem itens registrados"}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 italic">
+                      Alimentação fracionada em 4 a 6 refeições diárias respeitando a saciedade.
+                    </p>
+                  )}
+                </div>
+
+                {/* Orientações Personalizadas */}
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-[#003366] uppercase">
+                    Orientações Nutricionais & Conduta
+                  </Label>
+                  <textarea
+                    value={prescriptionNotes}
+                    onChange={(e) => setPrescriptionNotes(e.target.value)}
+                    rows={3}
+                    className="w-full text-xs p-2 border border-slate-300 rounded focus:border-[#003366] focus:ring-1 focus:ring-[#003366]"
+                  />
+                </div>
+
+                {/* Assinatura / Carimbo Sesc */}
+                <div className="pt-8 border-t border-slate-200 text-center space-y-1">
+                  <div className="w-48 border-b border-slate-400 mx-auto"></div>
+                  <p className="text-xs font-bold text-[#003366]">Equipe de Nutrição Sesc Amapá</p>
+                  <p className="text-[10px] text-slate-400">CRN — Atendimento Clínico Autorizado</p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  onClick={() => window.print()}
+                  className="bg-[#003366] hover:bg-[#002244] text-white font-bold"
+                >
+                  <Printer className="h-4 w-4 mr-1.5" />
+                  Imprimir Receita (PDF)
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Botão de Excluir Paciente */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDeletePatientCurrent}
+            className="border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium"
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            Excluir
+          </Button>
+        </div>
       </div>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-4">
-        <MacroCard label="Calorias" value={`${Math.round(totals?.kcal || 0)} kcal`} />
+      {/* Avaliação Antropométrica e Calculadora de IMC */}
+      <Card className="border border-slate-200 shadow-sm bg-white border-t-4 border-t-[#003366]">
+        <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Calculator className="h-5 w-5 text-[#003366]" />
+            <CardTitle className="text-base font-bold text-[#003366]">
+              Avaliação Antropométrica & Calculadora de IMC
+            </CardTitle>
+          </div>
+          {imcClass && (
+            <span className={`text-xs font-bold px-3 py-1 rounded-full ${imcClass.color}`}>
+              {imcClass.text}
+            </span>
+          )}
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+            <div className="space-y-1">
+              <Label htmlFor="weight" className="text-xs font-semibold text-slate-700">
+                Peso Atual (kg)
+              </Label>
+              <Input
+                id="weight"
+                type="number"
+                step="0.1"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                placeholder="70.0"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="height" className="text-xs font-semibold text-slate-700">
+                Altura (cm)
+              </Label>
+              <Input
+                id="height"
+                type="number"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                placeholder="170"
+              />
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded border border-slate-200 text-center">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase block">
+                IMC Calculado
+              </span>
+              <span className="text-2xl font-black text-[#003366]">
+                {imcValue > 0 ? imcValue : "—"}
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Resumo de Macronutrientes do Dia */}
+      <div className="grid gap-4 sm:grid-cols-4">
+        <MacroCard label="Calorias Registradas" value={`${Math.round(totals?.kcal || 0)} kcal`} />
         <MacroCard label="Proteínas" value={`${Math.round(totals?.protein || 0)} g`} />
         <MacroCard label="Carboidratos" value={`${Math.round(totals?.carbs || 0)} g`} />
         <MacroCard label="Gorduras" value={`${Math.round(totals?.fat || 0)} g`} />
       </div>
 
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-foreground">Diário alimentar</h2>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>Adicionar refeição</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Nova refeição</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleAddMeal} className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label htmlFor="date">Data</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="mealName">Refeição</Label>
-                <Select value={mealName} onValueChange={setMealName}>
-                  <SelectTrigger id="mealName">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MEAL_NAMES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="food">Alimento</Label>
-                <Select value={selectedFood} onValueChange={setSelectedFood}>
-                  <SelectTrigger id="food">
-                    <SelectValue placeholder="Selecione um alimento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {foods?.map((food) => (
-                      <SelectItem key={food.id} value={food.id}>
-                        {food.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="quantity">Quantidade (g)</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  min={1}
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Salvando..." : "Salvar refeição"}
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
+      {/* Seção de Diário Alimentar */}
       <div className="space-y-4">
-        {meals && meals.length > 0 ? (
-          meals.map((meal) => (
-            <Card key={meal.id}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div>
-                  <CardTitle className="text-base font-medium">{meal.name}</CardTitle>
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(meal.meal_date), "dd/MM/yyyy", { locale: ptBR })}
-                  </p>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => handleDeleteMeal(meal.id)}>
-                  Remover
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {meal.items && meal.items.length > 0 ? (
-                  <ul className="space-y-2">
-                    {meal.items.map((item: any) => (
-                      <li key={item.id} className="flex items-center justify-between text-sm">
-                        <span className="text-foreground">
-                          {item.food?.name} — {item.quantity_grams}g
-                        </span>
-                        <span className="text-muted-foreground">
-                          {Math.round(item.calculated_calories)} kcal
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Nenhum item registrado.</p>
-                )}
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <div className="rounded-2xl border border-dashed border-border p-12 text-center">
-            <p className="text-muted-foreground">Nenhuma refeição registrada.</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Adicione a primeira refeição do paciente.
-            </p>
+        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+          <div className="flex items-center gap-2">
+            <Utensils className="h-5 w-5 text-[#003366]" />
+            <h2 className="text-lg font-bold text-[#003366]">Diário Alimentar</h2>
           </div>
-        )}
+
+          <Dialog open={openMealDialog} onOpenChange={setOpenMealDialog}>
+            <DialogTrigger asChild>
+              <Button className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold">
+                <Plus className="h-4 w-4 mr-1" />
+                Adicionar Refeição
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-base font-bold text-[#003366]">
+                  Nova Refeição no Prontuário
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleAddMeal} className="space-y-4 pt-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="date" className="text-xs font-semibold text-slate-700">
+                    Data
+                  </Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="mealName" className="text-xs font-semibold text-slate-700">
+                    Refeição
+                  </Label>
+                  <Select value={mealName} onValueChange={setMealName}>
+                    <SelectTrigger id="mealName">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MEAL_NAMES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="food" className="text-xs font-semibold text-slate-700">
+                    Alimento
+                  </Label>
+                  <Select value={selectedFood} onValueChange={setSelectedFood}>
+                    <SelectTrigger id="food">
+                      <SelectValue placeholder="Selecione da tabela de alimentos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {foods?.map((foodItem) => (
+                        <SelectItem key={foodItem.id} value={foodItem.id}>
+                          {foodItem.name} ({foodItem.calories_per_100g} kcal/100g)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="quantity" className="text-xs font-semibold text-slate-700">
+                    Quantidade (gramas)
+                  </Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min={1}
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold"
+                  disabled={loading}
+                >
+                  {loading ? "Salvando..." : "Salvar Refeição"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Lista de Refeições */}
+        <div className="space-y-4">
+          {meals && meals.length > 0 ? (
+            meals.map((mealItem) => (
+              <Card key={mealItem.id} className="border border-slate-200 shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50 border-b border-slate-100">
+                  <div>
+                    <CardTitle className="text-sm font-bold text-[#003366]">
+                      {mealItem.name}
+                    </CardTitle>
+                    <p className="text-[11px] text-slate-500">
+                      {format(new Date(mealItem.meal_date), "dd/MM/yyyy", { locale: ptBR })}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-red-600 hover:bg-red-50"
+                    onClick={() => handleDeleteMeal(mealItem.id)}
+                  >
+                    Remover
+                  </Button>
+                </CardHeader>
+                <CardContent className="pt-3">
+                  {mealItem.items && mealItem.items.length > 0 ? (
+                    <ul className="space-y-2">
+                      {mealItem.items.map((item: any) => (
+                        <li
+                          key={item.id}
+                          className="flex items-center justify-between text-xs border-b border-slate-100 pb-1"
+                        >
+                          <span className="font-medium text-slate-800">
+                            {item.food?.name} — {item.quantity_grams}g
+                          </span>
+                          <span className="font-bold text-[#003366]">
+                            {Math.round(item.calculated_calories)} kcal
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-xs text-slate-400 italic">Nenhum alimento adicionado.</p>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center bg-white space-y-2">
+              <Utensils className="h-8 w-8 text-slate-300 mx-auto" />
+              <p className="text-xs text-slate-500">Nenhuma refeição registrada na data de hoje.</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -279,10 +549,10 @@ function PatientDetailPage() {
 
 function MacroCard({ label, value }: { label: string; value: string }) {
   return (
-    <Card>
+    <Card className="border border-slate-200 bg-white">
       <CardContent className="p-4">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="mt-1 text-lg font-semibold text-foreground">{value}</p>
+        <p className="text-[11px] font-semibold text-slate-500 uppercase">{label}</p>
+        <p className="mt-1 text-lg font-bold text-[#003366]">{value}</p>
       </CardContent>
     </Card>
   );

@@ -242,3 +242,16 @@ export const deleteMeal = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+export const deletePatient = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((id: string) => z.string().uuid().parse(id))
+  .handler(async ({ data: id, context }) => {
+    const { error } = await context.supabase
+      .from("patients")
+      .delete()
+      .eq("id", id)
+      .eq("nutritionist_id", context.userId);
+    if (error) throw error;
+    return { ok: true };
+  });
