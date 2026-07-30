@@ -6,14 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Users, Utensils, TrendingUp } from "lucide-react";
 
 export const Route = createFileRoute("/app/")({
-  loader: async ({ context }) => {
-    try {
-      await context.queryClient.ensureQueryData({
-        queryKey: ["patients"],
-        queryFn: () => getPatients({ data: undefined }),
-      });
-    } catch (err) {}
-  },
   head: () => ({
     meta: [
       { title: "Painel Clínico — Saúde Nutricional Sesc" },

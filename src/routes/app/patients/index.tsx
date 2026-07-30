@@ -17,14 +17,6 @@ import { Trash2, User, FileText, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/patients/")({
-  loader: async ({ context }) => {
-    try {
-      await context.queryClient.ensureQueryData({
-        queryKey: ["patients"],
-        queryFn: () => getPatients({ data: undefined }),
-      });
-    } catch (err) {}
-  },
   head: () => ({
     meta: [
       { title: "Prontuários de Pacientes — Saúde Nutricional Sesc" },

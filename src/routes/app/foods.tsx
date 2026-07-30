@@ -16,18 +16,10 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/foods")({
-  loader: async ({ context }) => {
-    try {
-      await context.queryClient.ensureQueryData({
-        queryKey: ["foods"],
-        queryFn: () => getFoods({ data: undefined }),
-      });
-    } catch (err) {}
-  },
   head: () => ({
     meta: [
-      { title: "Alimentos — NutriAvalia" },
-      { name: "description", content: "Banco de alimentos do NutriAvalia." },
+      { title: "Alimentos — Saúde Nutricional Sesc" },
+      { name: "description", content: "Banco de alimentos do Saúde Nutricional Sesc." },
     ],
   }),
   component: FoodsPage,
