@@ -94,10 +94,9 @@ function AuthPage() {
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12 bg-slate-50">
       <Card className="w-full max-w-md border-t-8 border-t-[#003366] border-slate-200 shadow-lg bg-white">
         <CardHeader className="text-center pb-4">
-          <div className="mx-auto mb-2 flex justify-center">
-            <SescLogo className="h-14" />
-          </div>
-          <CardTitle className="text-xl font-bold text-[#003366] mt-2">Saúde Nutricional</CardTitle>
+          <CardTitle className="text-xl font-extrabold text-[#003366]">
+            Saúde Nutricional Sesc
+          </CardTitle>
           <CardDescription className="text-xs text-slate-600 mt-1">
             Prontuário Clínico & Sistema de Gestão
           </CardDescription>
