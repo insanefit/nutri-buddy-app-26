@@ -32,18 +32,20 @@ import {
 } from "@/components/ui/dialog";
 import { SescLogo } from "@/components/SescLogo";
 import {
-  Calculator,
   Printer,
   Trash2,
   Plus,
   Utensils,
   FileText,
-  UserCheck,
   Ruler,
-  Scale,
   Activity,
   History,
   CheckCircle,
+  ClipboardList,
+  BookOpen,
+  FlaskConical,
+  Save,
+  Calendar,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -53,7 +55,7 @@ export const Route = createFileRoute("/app/patients/$id")({
       { title: "Prontuário & Medidas Corporais — Saúde Nutricional Sesc" },
       {
         name: "description",
-        content: "Prontuário clínico, medidas corporais e prescrição nutricional.",
+        content: "Prontuário clínico, medidas corporais, anamnese e prescrição nutricional.",
       },
     ],
   }),
@@ -83,6 +85,10 @@ function PatientDetailPage() {
   const { id } = useParams({ from: "/app/patients/$id" });
   const navigate = useNavigate();
   const today = format(new Date(), "yyyy-MM-dd");
+
+  const [activeTab, setActiveTab] = useState<
+    "anthropometry" | "anamnesis" | "diet" | "recipes" | "exams" | "notes"
+  >("anthropometry");
 
   const { data: patient } = useQuery({
     queryKey: ["patient", id],
@@ -125,7 +131,7 @@ function PatientDetailPage() {
       : null) ||
     "Paciente Sesc";
 
-  // Estados de IMC & Medidas Corporais
+  // 1. Estados de Medidas Corporais
   const [weight, setWeight] = useState("78.5");
   const [height, setHeight] = useState("175");
   const [waist, setWaist] = useState("84");
@@ -138,7 +144,6 @@ function PatientDetailPage() {
   const [leftThigh, setLeftThigh] = useState("56");
   const [bodyFat, setBodyFat] = useState("21.5");
 
-  // Histórico de avaliações salvas em memória/localStorage
   const [evaluationsHistory, setEvaluationsHistory] = useState([
     {
       date: "15/05/2026",
@@ -181,14 +186,202 @@ function PatientDetailPage() {
     toast.success("Medidas corporais salvas no histórico do prontuário!");
   };
 
-  // Estados de Refeição
+  // 2. Estados de Anamnese Clínica & Nutricional
+  const [clinicalHistory, setClinicalHistory] = useState(
+    "Hipertensão arterial sistêmica leve sob acompanhamento médico. Sem histórico de cirurgias bariátricas ou gastrointestinais.",
+  );
+  const [medications, setMedications] = useState(
+    "Losartana Potássica 50mg (1x ao dia pela manhã).",
+  );
+  const [allergies, setAllergies] = useState(
+    "Intolerância leve à lactose. Sem alergias alimentares graves relatas.",
+  );
+  const [preferences, setPreferences] = useState(
+    "Preferência por peixes grelhados, legumes assados, frutas tropicais e açaí natural.",
+  );
+  const [aversions, setAversions] = useState(
+    "Aversão a fígado bovino e alimentos excessivamente gordurosos.",
+  );
+  const [physicalActivity, setPhysicalActivity] = useState(
+    "Caminhada moderada 3 vezes por semana (45 minutos por sessão).",
+  );
+  const [waterIntake, setWaterIntake] = useState("2.5 Litros de água/dia (aprox. 8 a 10 copos).");
+  const [bowelHabits, setBowelHabits] = useState(
+    "Funcionamento intestinal regular (1 vez ao dia, fezes tipo 3 ou 4 de Bristol).",
+  );
+  const [treatmentGoal, setTreatmentGoal] = useState(
+    "Reeducação alimentar, controle pressórico e redução de gordura corporal visceral.",
+  );
+
+  const handleSaveAnamnesis = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast.success("Anamnese clínica e nutricional salva com sucesso no prontuário Sesc!");
+  };
+
+  // 3. Estados de Receitas & Guias Nutricionais
+  const [recipesList, setRecipesList] = useState([
+    {
+      id: "1",
+      title: "Suco Verde Antioxidante Sesc",
+      category: "Café da Manhã / Lanche",
+      ingredients:
+        "1 folha de couve manteiga, 1/2 maçã verde, 100ml de água de coco, suco de 1/2 limão, 1 colher de chá de gengibre ralado.",
+      preparation:
+        "Bater todos os ingredientes no liquidificador com gelo e servir sem coar para preservar as fibras.",
+      date: "28/05/2026",
+    },
+    {
+      id: "2",
+      title: "Omelete Proteico com Ervas e Queijo Branco",
+      category: "Café da Manhã / Jantar",
+      ingredients:
+        "2 ovos inteiros, 30g de queijo minas frescal, sementes de gergelim, orégano, salsinha e pitada de sal marinho.",
+      preparation:
+        "Bater os ovos com os temperos. Dourar em frigideira antiaderente untada com azeite de oliva e rechear com o queijo.",
+      date: "25/05/2026",
+    },
+  ]);
+  const [openRecipeDialog, setOpenRecipeDialog] = useState(false);
+  const [recipeTitle, setRecipeTitle] = useState("");
+  const [recipeCategory, setRecipeCategory] = useState("Café da Manhã");
+  const [recipeIngredients, setRecipeIngredients] = useState("");
+  const [recipePreparation, setRecipePreparation] = useState("");
+
+  const handleAddRecipe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!recipeTitle || !recipeIngredients) {
+      toast.error("Preencha o título e os ingredientes da receita.");
+      return;
+    }
+    const newRec = {
+      id: Date.now().toString(),
+      title: recipeTitle,
+      category: recipeCategory,
+      ingredients: recipeIngredients,
+      preparation: recipePreparation,
+      date: format(new Date(), "dd/MM/yyyy"),
+    };
+    setRecipesList([newRec, ...recipesList]);
+    setRecipeTitle("");
+    setRecipeIngredients("");
+    setRecipePreparation("");
+    setOpenRecipeDialog(false);
+    toast.success("Receita prescrita e adicionada ao prontuário!");
+  };
+
+  // 4. Estados de Exames Laboratoriais
+  const [examsList, setExamsList] = useState([
+    {
+      id: "1",
+      name: "Glicemia de Jejum",
+      value: "89",
+      unit: "mg/dL",
+      reference: "70 a 99 mg/dL",
+      status: "Normal",
+      date: "10/05/2026",
+    },
+    {
+      id: "2",
+      name: "Hemoglobina Glicada (HbA1c)",
+      value: "5.4",
+      unit: "%",
+      reference: "Inferior a 5.7%",
+      status: "Normal",
+      date: "10/05/2026",
+    },
+    {
+      id: "3",
+      name: "Colesterol Total",
+      value: "195",
+      unit: "mg/dL",
+      reference: "Desejável < 190 mg/dL",
+      status: "Alterado",
+      date: "10/05/2026",
+    },
+    {
+      id: "4",
+      name: "Triglicerídeos",
+      value: "142",
+      unit: "mg/dL",
+      reference: "Desejável < 150 mg/dL",
+      status: "Normal",
+      date: "10/05/2026",
+    },
+    {
+      id: "5",
+      name: "Vitamina D (25-OH-D)",
+      value: "34",
+      unit: "ng/mL",
+      reference: "20 a 50 ng/mL",
+      status: "Normal",
+      date: "10/05/2026",
+    },
+  ]);
+  const [openExamDialog, setOpenExamDialog] = useState(false);
+  const [examName, setExamName] = useState("");
+  const [examValue, setExamValue] = useState("");
+  const [examUnit, setExamUnit] = useState("mg/dL");
+  const [examReference, setExamReference] = useState("");
+  const [examStatus, setExamStatus] = useState<"Normal" | "Alterado">("Normal");
+
+  const handleAddExam = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!examName || !examValue) {
+      toast.error("Preencha o nome e o resultado do exame.");
+      return;
+    }
+    const newEx = {
+      id: Date.now().toString(),
+      name: examName,
+      value: examValue,
+      unit: examUnit,
+      reference: examReference || "Valores de Referência Sesc",
+      status: examStatus,
+      date: format(new Date(), "dd/MM/yyyy"),
+    };
+    setExamsList([newEx, ...examsList]);
+    setExamName("");
+    setExamValue("");
+    setExamReference("");
+    setOpenExamDialog(false);
+    toast.success("Exame laboratorial registrado com sucesso!");
+  };
+
+  // 5. Estados de Anotações do Nutricionista
+  const [clinicalNotes, setClinicalNotes] = useState(
+    "Paciente demonstrou excelente adesão às recomendações da primeira consulta. Relata diminuição significativa do inchaço abdominal e melhora na disposição diária. Mantida a orientação de ingestão hídrica fracionada.",
+  );
+  const [notesHistory, setNotesHistory] = useState([
+    {
+      id: "1",
+      date: "15/05/2026",
+      content:
+        "Primeira consulta de avaliação nutricional realizada. Definido objetivo de reeducação e perda ponderal gradual.",
+      author: "Nutricionista Resp. Sesc",
+    },
+  ]);
+
+  const handleSaveNotes = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!clinicalNotes.trim()) return;
+    const newNote = {
+      id: Date.now().toString(),
+      date: format(new Date(), "dd/MM/yyyy HH:mm"),
+      content: clinicalNotes,
+      author: "Nutricionista Resp. Sesc",
+    };
+    setNotesHistory([newNote, ...notesHistory]);
+    toast.success("Anotação de evolução clínica salva no prontuário!");
+  };
+
+  // 6. Estados do Plano Alimentar / Refeições
   const [date, setDate] = useState(today);
   const [mealName, setMealName] = useState("Café da manhã");
   const [selectedFood, setSelectedFood] = useState("");
   const [quantity, setQuantity] = useState("100");
   const [openMealDialog, setOpenMealDialog] = useState(false);
   const [openPrescriptionDialog, setOpenPrescriptionDialog] = useState(false);
-  const [prescriptionNotes, setPrescriptionNotes] = useState(
+  const [prescriptionNotes] = useState(
     "Mastigar devagar. Evitar ingestão de líquidos durante as refeições principais. Seguir orientações do Guia Alimentar para a População Brasileira.",
   );
   const [loading, setLoading] = useState(false);
@@ -257,14 +450,14 @@ function PatientDetailPage() {
   );
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
       {/* Cabeçalho do Prontuário Clínico */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-[#003366]">{patientName}</h1>
             <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-blue-100 text-[#003366]">
-              Prontuário Ativo
+              Prontuário Sesc
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
@@ -273,13 +466,13 @@ function PatientDetailPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Botão de Emitir Receita */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Emitir Receita / Prescrição Sesc */}
           <Dialog open={openPrescriptionDialog} onOpenChange={setOpenPrescriptionDialog}>
             <DialogTrigger asChild>
-              <Button className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold gap-1.5">
+              <Button className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold gap-1.5 shadow-sm">
                 <Printer className="h-4 w-4" />
-                Emitir Receita / Prescrição
+                Imprimir Prescrição
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -298,9 +491,7 @@ function PatientDetailPage() {
                     <h3 className="font-extrabold text-[#003366] text-sm uppercase">
                       Saúde Nutricional Sesc
                     </h3>
-                    <p className="text-[11px] text-slate-500">
-                      Unidade de Atendimento Clínico — Amapá
-                    </p>
+                    <p className="text-[11px] text-slate-500">Unidade de Atendimento Clínico</p>
                   </div>
                 </div>
 
@@ -350,465 +541,947 @@ function PatientDetailPage() {
                   )}
                 </div>
 
-                {/* Orientações Personalizadas */}
                 <div className="space-y-1">
-                  <Label className="text-xs font-bold text-[#003366] uppercase">
-                    Orientações Nutricionais & Conduta
-                  </Label>
-                  <textarea
-                    value={prescriptionNotes}
-                    onChange={(e) => setPrescriptionNotes(e.target.value)}
-                    rows={3}
-                    className="w-full text-xs p-2 border border-slate-300 rounded focus:border-[#003366] focus:ring-1 focus:ring-[#003366]"
-                  />
+                  <h4 className="text-xs font-bold text-[#003366] uppercase border-b border-slate-200 pb-1">
+                    Orientações Nutricionais Finais
+                  </h4>
+                  <p className="text-xs text-slate-600 leading-relaxed italic bg-slate-50 p-2.5 rounded border border-slate-100">
+                    "{prescriptionNotes}"
+                  </p>
                 </div>
 
-                {/* Assinatura / Carimbo Sesc */}
-                <div className="pt-8 border-t border-slate-200 text-center space-y-1">
-                  <div className="w-48 border-b border-slate-400 mx-auto"></div>
-                  <p className="text-xs font-bold text-[#003366]">Equipe de Nutrição Sesc Amapá</p>
-                  <p className="text-[10px] text-slate-400">CRN — Atendimento Clínico Autorizado</p>
+                <div className="pt-8 flex flex-col items-center justify-center text-center border-t border-slate-200">
+                  <div className="w-48 border-t border-slate-400 mb-1" />
+                  <p className="text-xs font-bold text-[#003366]">
+                    Equipe de Nutrição Clínica Sesc
+                  </p>
+                  <p className="text-[10px] text-slate-400">CRN Região Amapá</p>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  onClick={() => window.print()}
-                  className="bg-[#003366] hover:bg-[#002244] text-white font-bold"
-                >
-                  <Printer className="h-4 w-4 mr-1.5" />
-                  Imprimir Receita (PDF)
-                </Button>
-              </div>
+              <Button
+                onClick={() => window.print()}
+                className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold"
+              >
+                Imprimir Documento
+              </Button>
             </DialogContent>
           </Dialog>
 
-          {/* Botão de Excluir Paciente */}
           <Button
             variant="outline"
             size="sm"
+            className="text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
             onClick={handleDeletePatientCurrent}
-            className="border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium"
           >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Excluir
+            <Trash2 className="h-3.5 w-3.5 mr-1" />
+            Excluir Prontuário
           </Button>
         </div>
       </div>
 
-      {/* Avaliação Antropométrica e Medidas Corporais */}
-      <Card className="border border-slate-200 shadow-sm bg-white border-t-4 border-t-[#003366]">
-        <CardHeader className="pb-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Ruler className="h-5 w-5 text-[#003366]" />
-            <div>
-              <CardTitle className="text-base font-bold text-[#003366]">
-                Avaliação Antropométrica & Medidas Corporais
-              </CardTitle>
-              <p className="text-xs text-slate-500">
-                Acompanhamento clínico de peso, circunferências, IMC e comorbidades
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {imcClass && (
-              <span className={`text-xs font-bold px-3 py-1 rounded-full ${imcClass.color}`}>
-                {imcClass.text}
-              </span>
-            )}
-            <Button
-              onClick={handleSaveEvaluation}
-              size="sm"
-              className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold"
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              Salvar Avaliação
-            </Button>
-          </div>
-        </CardHeader>
+      {/* Menu de Abas do Prontuário Clínico */}
+      <div className="flex border-b border-slate-200 overflow-x-auto no-scrollbar gap-1 pt-1">
+        <button
+          onClick={() => setActiveTab("anthropometry")}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold border-b-2 whitespace-nowrap transition-colors ${
+            activeTab === "anthropometry"
+              ? "border-[#003366] text-[#003366] bg-blue-50/50 rounded-t-md"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <Ruler className="h-4 w-4" />
+          Medidas Corporais & IMC
+        </button>
 
-        <CardContent className="pt-4 space-y-6">
-          {/* Dados Gerais & IMC */}
-          <div>
-            <h4 className="text-xs font-bold text-[#003366] uppercase mb-3 flex items-center gap-1.5 border-b border-slate-100 pb-1">
-              <Scale className="h-4 w-4 text-[#003366]" />
-              Dados Principais & Composição
-            </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="weight" className="text-xs font-semibold text-slate-700">
-                  Peso (kg)
-                </Label>
-                <Input
-                  id="weight"
-                  type="number"
-                  step="0.1"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                />
-              </div>
+        <button
+          onClick={() => setActiveTab("anamnesis")}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold border-b-2 whitespace-nowrap transition-colors ${
+            activeTab === "anamnesis"
+              ? "border-[#003366] text-[#003366] bg-blue-50/50 rounded-t-md"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <ClipboardList className="h-4 w-4" />
+          Anamnese Nutricional
+        </button>
 
-              <div className="space-y-1">
-                <Label htmlFor="height" className="text-xs font-semibold text-slate-700">
-                  Altura (cm)
-                </Label>
-                <Input
-                  id="height"
-                  type="number"
-                  value={height}
-                  onChange={(e) => setHeight(e.target.value)}
-                />
-              </div>
+        <button
+          onClick={() => setActiveTab("diet")}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold border-b-2 whitespace-nowrap transition-colors ${
+            activeTab === "diet"
+              ? "border-[#003366] text-[#003366] bg-blue-50/50 rounded-t-md"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <Utensils className="h-4 w-4" />
+          Plano Alimentar
+        </button>
 
-              <div className="space-y-1">
-                <Label htmlFor="bodyFat" className="text-xs font-semibold text-slate-700">
-                  Gordura (%BF)
-                </Label>
-                <Input
-                  id="bodyFat"
-                  type="number"
-                  step="0.1"
-                  value={bodyFat}
-                  onChange={(e) => setBodyFat(e.target.value)}
-                />
-              </div>
+        <button
+          onClick={() => setActiveTab("recipes")}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold border-b-2 whitespace-nowrap transition-colors ${
+            activeTab === "recipes"
+              ? "border-[#003366] text-[#003366] bg-blue-50/50 rounded-t-md"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <BookOpen className="h-4 w-4" />
+          Receitas Sesc
+        </button>
 
-              <div className="bg-slate-50 p-2.5 rounded border border-slate-200 text-center">
-                <span className="text-[10px] font-semibold text-slate-500 uppercase block">
-                  IMC Calculado
-                </span>
-                <span className="text-xl font-black text-[#003366]">
-                  {imcValue > 0 ? imcValue : "—"}
-                </span>
-              </div>
-            </div>
-          </div>
+        <button
+          onClick={() => setActiveTab("exams")}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold border-b-2 whitespace-nowrap transition-colors ${
+            activeTab === "exams"
+              ? "border-[#003366] text-[#003366] bg-blue-50/50 rounded-t-md"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <FlaskConical className="h-4 w-4" />
+          Exames Laboratoriais
+        </button>
 
-          {/* Circunferências Corporais (cm) */}
-          <div>
-            <h4 className="text-xs font-bold text-[#003366] uppercase mb-3 flex items-center gap-1.5 border-b border-slate-100 pb-1">
-              <Ruler className="h-4 w-4 text-[#003366]" />
-              Circunferências (cm) & Relação Cintura/Quadril (RCQ)
-            </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="waist" className="text-xs font-semibold text-slate-700">
-                  Cintura (cm)
-                </Label>
-                <Input
-                  id="waist"
-                  type="number"
-                  value={waist}
-                  onChange={(e) => setWaist(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="hip" className="text-xs font-semibold text-slate-700">
-                  Quadril (cm)
-                </Label>
-                <Input
-                  id="hip"
-                  type="number"
-                  value={hip}
-                  onChange={(e) => setHip(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="abdomen" className="text-xs font-semibold text-slate-700">
-                  Abdômen (cm)
-                </Label>
-                <Input
-                  id="abdomen"
-                  type="number"
-                  value={abdomen}
-                  onChange={(e) => setAbdomen(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="chest" className="text-xs font-semibold text-slate-700">
-                  Tórax (cm)
-                </Label>
-                <Input
-                  id="chest"
-                  type="number"
-                  value={chest}
-                  onChange={(e) => setChest(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="rightArm" className="text-xs font-semibold text-slate-700">
-                  Braço Dir. (cm)
-                </Label>
-                <Input
-                  id="rightArm"
-                  type="number"
-                  value={rightArm}
-                  onChange={(e) => setRightArm(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="leftArm" className="text-xs font-semibold text-slate-700">
-                  Braço Esq. (cm)
-                </Label>
-                <Input
-                  id="leftArm"
-                  type="number"
-                  value={leftArm}
-                  onChange={(e) => setLeftArm(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="rightThigh" className="text-xs font-semibold text-slate-700">
-                  Coxa Dir. (cm)
-                </Label>
-                <Input
-                  id="rightThigh"
-                  type="number"
-                  value={rightThigh}
-                  onChange={(e) => setRightThigh(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="leftThigh" className="text-xs font-semibold text-slate-700">
-                  Coxa Esq. (cm)
-                </Label>
-                <Input
-                  id="leftThigh"
-                  type="number"
-                  value={leftThigh}
-                  onChange={(e) => setLeftThigh(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Cálculo de RCQ */}
-            <div className="mt-4 p-3 bg-slate-50 rounded border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="text-xs text-slate-700">
-                <span className="font-bold text-[#003366]">Relação Cintura/Quadril (RCQ):</span>{" "}
-                <span className="font-extrabold text-slate-900">
-                  {rcqValue > 0 ? rcqValue : "—"}
-                </span>
-              </div>
-              <span
-                className={`text-[11px] font-bold px-2.5 py-0.5 rounded ${
-                  rcqValue > 0.85
-                    ? "bg-amber-100 text-amber-800"
-                    : "bg-emerald-100 text-emerald-800"
-                }`}
-              >
-                {rcqValue > 0.85
-                  ? "Risco Cardiovascular Moderado/Elevado"
-                  : "Risco Cardiovascular Baixo (Ideal)"}
-              </span>
-            </div>
-          </div>
-
-          {/* Histórico de Evolução Antropométrica */}
-          <div className="pt-2">
-            <h4 className="text-xs font-bold text-[#003366] uppercase mb-3 flex items-center gap-1.5 border-b border-slate-100 pb-1">
-              <History className="h-4 w-4 text-[#003366]" />
-              Histórico & Evolução de Medidas do Paciente
-            </h4>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
-                    <th className="p-2">Data</th>
-                    <th className="p-2">Consulta</th>
-                    <th className="p-2">Peso</th>
-                    <th className="p-2">IMC</th>
-                    <th className="p-2">Cintura</th>
-                    <th className="p-2">Quadril</th>
-                    <th className="p-2">RCQ</th>
-                    <th className="p-2">% Gordura</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {evaluationsHistory.map((ev, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50">
-                      <td className="p-2 font-medium text-slate-900">{ev.date}</td>
-                      <td className="p-2 text-slate-600">{ev.label}</td>
-                      <td className="p-2 font-bold text-[#003366]">{ev.weight}</td>
-                      <td className="p-2 font-semibold text-slate-700">{ev.imc}</td>
-                      <td className="p-2 text-slate-600">{ev.waist}</td>
-                      <td className="p-2 text-slate-600">{ev.hip}</td>
-                      <td className="p-2 text-slate-600">{ev.rcq}</td>
-                      <td className="p-2 font-semibold text-slate-700">{ev.bodyFat}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Resumo de Macronutrientes do Dia */}
-      <div className="grid gap-4 sm:grid-cols-4">
-        <MacroCard label="Calorias Registradas" value={`${Math.round(totals?.kcal || 0)} kcal`} />
-        <MacroCard label="Proteínas" value={`${Math.round(totals?.protein || 0)} g`} />
-        <MacroCard label="Carboidratos" value={`${Math.round(totals?.carbs || 0)} g`} />
-        <MacroCard label="Gorduras" value={`${Math.round(totals?.fat || 0)} g`} />
+        <button
+          onClick={() => setActiveTab("notes")}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold border-b-2 whitespace-nowrap transition-colors ${
+            activeTab === "notes"
+              ? "border-[#003366] text-[#003366] bg-blue-50/50 rounded-t-md"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <FileText className="h-4 w-4" />
+          Anotações do Nutricionista
+        </button>
       </div>
 
-      {/* Seção de Diário Alimentar */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-          <div className="flex items-center gap-2">
-            <Utensils className="h-5 w-5 text-[#003366]" />
-            <h2 className="text-lg font-bold text-[#003366]">Diário Alimentar</h2>
-          </div>
-
-          <Dialog open={openMealDialog} onOpenChange={setOpenMealDialog}>
-            <DialogTrigger asChild>
-              <Button className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold">
-                <Plus className="h-4 w-4 mr-1" />
-                Adicionar Refeição
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle className="text-base font-bold text-[#003366]">
-                  Nova Refeição no Prontuário
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleAddMeal} className="space-y-4 pt-2">
+      {/* ---------------- ABA 1: MEDIDAS CORPORAIS ---------------- */}
+      {activeTab === "anthropometry" && (
+        <div className="space-y-6">
+          <Card className="border border-slate-200 shadow-sm bg-white">
+            <CardHeader className="pb-3 border-b border-slate-100">
+              <CardTitle className="text-base font-bold text-[#003366] flex items-center gap-2">
+                <Ruler className="h-5 w-5 text-[#003366]" />
+                Avaliação Antropométrica & Circunferências
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="date" className="text-xs font-semibold text-slate-700">
-                    Data
+                  <Label htmlFor="weight" className="text-xs font-semibold text-slate-700">
+                    Peso Atual (kg)
                   </Label>
                   <Input
-                    id="date"
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    required
+                    id="weight"
+                    type="number"
+                    step="0.1"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="mealName" className="text-xs font-semibold text-slate-700">
-                    Refeição
-                  </Label>
-                  <Select value={mealName} onValueChange={setMealName}>
-                    <SelectTrigger id="mealName">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MEAL_NAMES.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>
-                          {t.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="food" className="text-xs font-semibold text-slate-700">
-                    Alimento
-                  </Label>
-                  <Select value={selectedFood} onValueChange={setSelectedFood}>
-                    <SelectTrigger id="food">
-                      <SelectValue placeholder="Selecione da tabela de alimentos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {foods?.map((foodItem) => (
-                        <SelectItem key={foodItem.id} value={foodItem.id}>
-                          {foodItem.name} ({foodItem.calories_per_100g} kcal/100g)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="quantity" className="text-xs font-semibold text-slate-700">
-                    Quantidade (gramas)
+                  <Label htmlFor="height" className="text-xs font-semibold text-slate-700">
+                    Altura (cm)
                   </Label>
                   <Input
-                    id="quantity"
+                    id="height"
                     type="number"
-                    min={1}
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    required
+                    value={height}
+                    onChange={(e) => setHeight(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="bodyFat" className="text-xs font-semibold text-slate-700">
+                    % Gordura (%BF)
+                  </Label>
+                  <Input
+                    id="bodyFat"
+                    type="number"
+                    step="0.1"
+                    value={bodyFat}
+                    onChange={(e) => setBodyFat(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="waist" className="text-xs font-semibold text-slate-700">
+                    Cintura (cm)
+                  </Label>
+                  <Input
+                    id="waist"
+                    type="number"
+                    value={waist}
+                    onChange={(e) => setWaist(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="hip" className="text-xs font-semibold text-slate-700">
+                    Quadril (cm)
+                  </Label>
+                  <Input
+                    id="hip"
+                    type="number"
+                    value={hip}
+                    onChange={(e) => setHip(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="abdomen" className="text-xs font-semibold text-slate-700">
+                    Abdômen (cm)
+                  </Label>
+                  <Input
+                    id="abdomen"
+                    type="number"
+                    value={abdomen}
+                    onChange={(e) => setAbdomen(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="chest" className="text-xs font-semibold text-slate-700">
+                    Tórax (cm)
+                  </Label>
+                  <Input
+                    id="chest"
+                    type="number"
+                    value={chest}
+                    onChange={(e) => setChest(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="rightArm" className="text-xs font-semibold text-slate-700">
+                    Braço Direito (cm)
+                  </Label>
+                  <Input
+                    id="rightArm"
+                    type="number"
+                    value={rightArm}
+                    onChange={(e) => setRightArm(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Indicadores Calculados (IMC e RCQ) */}
+              <div className="grid gap-4 sm:grid-cols-2 pt-2">
+                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 block uppercase">
+                      Índice de Massa Corporal (IMC)
+                    </span>
+                    <span className="text-2xl font-black text-[#003366]">{imcValue} kg/m²</span>
+                  </div>
+                  {imcClass && (
+                    <span className={`text-xs font-bold px-3 py-1 rounded-full ${imcClass.color}`}>
+                      {imcClass.text}
+                    </span>
+                  )}
+                </div>
+
+                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 block uppercase">
+                      Relação Cintura / Quadril (RCQ)
+                    </span>
+                    <span className="text-2xl font-black text-[#003366]">{rcqValue}</span>
+                  </div>
+                  <span
+                    className={`text-xs font-bold px-3 py-1 rounded-full ${
+                      rcqValue > 0.85
+                        ? "text-amber-700 bg-amber-100"
+                        : "text-emerald-700 bg-emerald-50"
+                    }`}
+                  >
+                    {rcqValue > 0.85 ? "Risco Cardiovascular Elevado" : "Risco Baixo / Adequado"}
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleSaveEvaluation}
+                className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold gap-2 shadow-sm"
+              >
+                <Save className="h-4 w-4" />
+                Salvar Avaliação Antropométrica no Histórico
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Tabela de Histórico de Avaliações */}
+          <Card className="border border-slate-200 shadow-sm bg-white">
+            <CardHeader className="pb-3 border-b border-slate-100">
+              <CardTitle className="text-sm font-bold text-[#003366] flex items-center gap-2">
+                <History className="h-4 w-4 text-[#003366]" />
+                Histórico & Evolução Físico-Antropométrica
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full text-xs text-left text-slate-700">
+                <thead className="bg-slate-50 text-slate-600 font-bold uppercase border-b border-slate-200">
+                  <tr>
+                    <th className="px-4 py-3">Data</th>
+                    <th className="px-4 py-3">Descrição</th>
+                    <th className="px-4 py-3">Peso</th>
+                    <th className="px-4 py-3">IMC</th>
+                    <th className="px-4 py-3">Cintura</th>
+                    <th className="px-4 py-3">Quadril</th>
+                    <th className="px-4 py-3">RCQ</th>
+                    <th className="px-4 py-3">% Gordura</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {evaluationsHistory.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-semibold text-[#003366]">{item.date}</td>
+                      <td className="px-4 py-3">{item.label}</td>
+                      <td className="px-4 py-3 font-bold">{item.weight}</td>
+                      <td className="px-4 py-3">{item.imc}</td>
+                      <td className="px-4 py-3">{item.waist}</td>
+                      <td className="px-4 py-3">{item.hip}</td>
+                      <td className="px-4 py-3 font-medium">{item.rcq}</td>
+                      <td className="px-4 py-3 font-semibold text-emerald-600">{item.bodyFat}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ---------------- ABA 2: ANAMNESE NUTRICIONAL ---------------- */}
+      {activeTab === "anamnesis" && (
+        <form onSubmit={handleSaveAnamnesis} className="space-y-6">
+          <Card className="border border-slate-200 shadow-sm bg-white">
+            <CardHeader className="pb-3 border-b border-slate-100">
+              <CardTitle className="text-base font-bold text-[#003366] flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-[#003366]" />
+                Anamnese Clínica & Histórico Nutricional Sesc
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-5">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label className="text-xs font-bold text-slate-700">
+                    Objetivo do Tratamento Nutricional
+                  </Label>
+                  <Input
+                    value={treatmentGoal}
+                    onChange={(e) => setTreatmentGoal(e.target.value)}
+                    placeholder="Ex: Reeducação alimentar e hipertrofia"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700">
+                    Histórico Clínico & Patologias
+                  </Label>
+                  <textarea
+                    rows={3}
+                    className="w-full rounded-md border border-slate-200 p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#003366]"
+                    value={clinicalHistory}
+                    onChange={(e) => setClinicalHistory(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700">
+                    Medicamentos / Suplementos em Uso
+                  </Label>
+                  <textarea
+                    rows={3}
+                    className="w-full rounded-md border border-slate-200 p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#003366]"
+                    value={medications}
+                    onChange={(e) => setMedications(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700">
+                    Alergias & Intolerâncias Alimentares
+                  </Label>
+                  <textarea
+                    rows={3}
+                    className="w-full rounded-md border border-slate-200 p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#003366]"
+                    value={allergies}
+                    onChange={(e) => setAllergies(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700">
+                    Preferências Alimentares
+                  </Label>
+                  <textarea
+                    rows={3}
+                    className="w-full rounded-md border border-slate-200 p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#003366]"
+                    value={preferences}
+                    onChange={(e) => setPreferences(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700">Aversões Alimentares</Label>
+                  <textarea
+                    rows={2}
+                    className="w-full rounded-md border border-slate-200 p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#003366]"
+                    value={aversions}
+                    onChange={(e) => setAversions(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700">
+                    Prática de Atividade Física
+                  </Label>
+                  <textarea
+                    rows={2}
+                    className="w-full rounded-md border border-slate-200 p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#003366]"
+                    value={physicalActivity}
+                    onChange={(e) => setPhysicalActivity(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700">Consumo Hídrico Diário</Label>
+                  <Input value={waterIntake} onChange={(e) => setWaterIntake(e.target.value)} />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700">Hábitos Intestinais</Label>
+                  <Input value={bowelHabits} onChange={(e) => setBowelHabits(e.target.value)} />
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold gap-2 shadow-sm mt-4"
+              >
+                <Save className="h-4 w-4" />
+                Salvar Anamnese no Prontuário Sesc
+              </Button>
+            </CardContent>
+          </Card>
+        </form>
+      )}
+
+      {/* ---------------- ABA 3: PLANO ALIMENTAR ---------------- */}
+      {activeTab === "diet" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <MacroCard
+              label="Calorias Prescritas"
+              value={`${Math.round(totals?.kcal || 0)} kcal`}
+            />
+            <MacroCard label="Proteínas Total" value={`${Math.round(totals?.protein || 0)} g`} />
+            <MacroCard label="Carboidratos Total" value={`${Math.round(totals?.carbs || 0)} g`} />
+            <MacroCard label="Gorduras Total" value={`${Math.round(totals?.fat || 0)} g`} />
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+            <div>
+              <h3 className="text-sm font-bold text-[#003366]">Plano de Refeições Diárias</h3>
+              <p className="text-xs text-slate-500">
+                Adicione alimentos e porções prescritas por refeição
+              </p>
+            </div>
+
+            <Dialog open={openMealDialog} onOpenChange={setOpenMealDialog}>
+              <DialogTrigger asChild>
+                <Button className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold gap-1.5">
+                  <Plus className="h-4 w-4" />
+                  Adicionar Refeição
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-lg font-bold text-[#003366]">
+                    Registrar Refeição
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleAddMeal} className="space-y-4 pt-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="date" className="text-xs font-semibold text-slate-700">
+                      Data
+                    </Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="mealName" className="text-xs font-semibold text-slate-700">
+                      Nome da Refeição
+                    </Label>
+                    <Select value={mealName} onValueChange={setMealName}>
+                      <SelectTrigger id="mealName">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MEAL_NAMES.map((t) => (
+                          <SelectItem key={t.value} value={t.value}>
+                            {t.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="food" className="text-xs font-semibold text-slate-700">
+                      Alimento
+                    </Label>
+                    <Select value={selectedFood} onValueChange={setSelectedFood}>
+                      <SelectTrigger id="food">
+                        <SelectValue placeholder="Selecione da tabela de alimentos" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {foods?.map((foodItem) => (
+                          <SelectItem key={foodItem.id} value={foodItem.id}>
+                            {foodItem.name} ({foodItem.calories_per_100g} kcal/100g)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="quantity" className="text-xs font-semibold text-slate-700">
+                      Quantidade (gramas)
+                    </Label>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      min={1}
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold"
+                    disabled={loading}
+                  >
+                    {loading ? "Salvando..." : "Salvar Refeição"}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="space-y-4">
+            {meals && meals.length > 0 ? (
+              meals.map((mealItem) => (
+                <Card key={mealItem.id} className="border border-slate-200 shadow-sm">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50 border-b border-slate-100">
+                    <div>
+                      <CardTitle className="text-sm font-bold text-[#003366]">
+                        {mealItem.name}
+                      </CardTitle>
+                      <p className="text-[11px] text-slate-500">
+                        {format(new Date(mealItem.meal_date), "dd/MM/yyyy", { locale: ptBR })}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-red-600 hover:bg-red-50"
+                      onClick={() => handleDeleteMeal(mealItem.id)}
+                    >
+                      Remover
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="pt-3">
+                    {mealItem.items && mealItem.items.length > 0 ? (
+                      <ul className="space-y-2">
+                        {mealItem.items.map((item: any) => (
+                          <li
+                            key={item.id}
+                            className="flex items-center justify-between text-xs border-b border-slate-100 pb-1"
+                          >
+                            <span className="font-medium text-slate-800">
+                              {item.food?.name} — {item.quantity_grams}g
+                            </span>
+                            <span className="font-bold text-[#003366]">
+                              {Math.round(item.calculated_calories)} kcal
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic">Nenhum alimento adicionado.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center bg-white space-y-2">
+                <Utensils className="h-8 w-8 text-slate-300 mx-auto" />
+                <p className="text-xs text-slate-500">
+                  Nenhuma refeição registrada na data de hoje.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- ABA 4: RECEITAS SESC ---------------- */}
+      {activeTab === "recipes" && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div>
+              <h3 className="text-base font-bold text-[#003366] flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-[#003366]" />
+                Receitas & Guias de Preparo Nutricional
+              </h3>
+              <p className="text-xs text-slate-500">
+                Cadastre e prescreva receitas práticas aos pacientes Sesc
+              </p>
+            </div>
+
+            <Dialog open={openRecipeDialog} onOpenChange={setOpenRecipeDialog}>
+              <DialogTrigger asChild>
+                <Button className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold gap-1.5 shadow-sm">
+                  <Plus className="h-4 w-4" />
+                  Nova Receita
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-lg font-bold text-[#003366]">
+                    Cadastrar Nova Receita Nutricional
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleAddRecipe} className="space-y-4 pt-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="rTitle" className="text-xs font-semibold text-slate-700">
+                      Título da Receita
+                    </Label>
+                    <Input
+                      id="rTitle"
+                      placeholder="Ex: Suco Detox de Couve e Limão"
+                      value={recipeTitle}
+                      onChange={(e) => setRecipeTitle(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="rCategory" className="text-xs font-semibold text-slate-700">
+                      Categoria / Tipo
+                    </Label>
+                    <Select value={recipeCategory} onValueChange={setRecipeCategory}>
+                      <SelectTrigger id="rCategory">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Café da Manhã">Café da Manhã</SelectItem>
+                        <SelectItem value="Almoço / Jantar">Almoço / Jantar</SelectItem>
+                        <SelectItem value="Lanche Saudável">Lanche Saudável</SelectItem>
+                        <SelectItem value="Suco / Bebida Funcional">
+                          Suco / Bebida Funcional
+                        </SelectItem>
+                        <SelectItem value="Sobremesa Fit">Sobremesa Fit</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="rIng" className="text-xs font-semibold text-slate-700">
+                      Ingredientes e Quantidades
+                    </Label>
+                    <textarea
+                      id="rIng"
+                      rows={3}
+                      className="w-full rounded-md border border-slate-200 p-2 text-xs text-slate-800"
+                      placeholder="1 folha de couve, 200ml de água..."
+                      value={recipeIngredients}
+                      onChange={(e) => setRecipeIngredients(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="rPrep" className="text-xs font-semibold text-slate-700">
+                      Modo de Preparo
+                    </Label>
+                    <textarea
+                      id="rPrep"
+                      rows={3}
+                      className="w-full rounded-md border border-slate-200 p-2 text-xs text-slate-800"
+                      placeholder="Bater tudo no liquidificador..."
+                      value={recipePreparation}
+                      onChange={(e) => setRecipePreparation(e.target.value)}
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold"
+                  >
+                    Salvar e Prescrever Receita
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {recipesList.map((rec) => (
+              <Card
+                key={rec.id}
+                className="border border-slate-200 shadow-sm bg-white flex flex-col justify-between"
+              >
+                <CardHeader className="pb-2 border-b border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-blue-50 text-[#003366]">
+                      {rec.category}
+                    </span>
+                    <span className="text-[10px] text-slate-400">{rec.date}</span>
+                  </div>
+                  <CardTitle className="text-sm font-bold text-[#003366] mt-2">
+                    {rec.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-3 space-y-2 text-xs text-slate-700">
+                  <div>
+                    <strong className="text-slate-900 block font-semibold">Ingredientes:</strong>
+                    <p className="text-slate-600 leading-relaxed mt-0.5">{rec.ingredients}</p>
+                  </div>
+                  {rec.preparation && (
+                    <div>
+                      <strong className="text-slate-900 block font-semibold">
+                        Modo de Preparo:
+                      </strong>
+                      <p className="text-slate-600 leading-relaxed mt-0.5">{rec.preparation}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- ABA 5: EXAMES LABORATORIAIS ---------------- */}
+      {activeTab === "exams" && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div>
+              <h3 className="text-base font-bold text-[#003366] flex items-center gap-2">
+                <FlaskConical className="h-5 w-5 text-[#003366]" />
+                Acompanhamento de Exames Laboratoriais
+              </h3>
+              <p className="text-xs text-slate-500">
+                Exames de sangue, bioquímicos e perfil metabólico
+              </p>
+            </div>
+
+            <Dialog open={openExamDialog} onOpenChange={setOpenExamDialog}>
+              <DialogTrigger asChild>
+                <Button className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold gap-1.5 shadow-sm">
+                  <Plus className="h-4 w-4" />
+                  Registrar Exame
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-lg font-bold text-[#003366]">
+                    Registrar Exame Laboratorial
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleAddExam} className="space-y-4 pt-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="exName" className="text-xs font-semibold text-slate-700">
+                      Nome do Exame
+                    </Label>
+                    <Input
+                      id="exName"
+                      placeholder="Ex: Glicemia de Jejum, Triglicerídeos"
+                      value={examName}
+                      onChange={(e) => setExamName(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="exVal" className="text-xs font-semibold text-slate-700">
+                        Resultado
+                      </Label>
+                      <Input
+                        id="exVal"
+                        placeholder="89"
+                        value={examValue}
+                        onChange={(e) => setExamValue(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="exUnit" className="text-xs font-semibold text-slate-700">
+                        Unidade
+                      </Label>
+                      <Input
+                        id="exUnit"
+                        placeholder="mg/dL"
+                        value={examUnit}
+                        onChange={(e) => setExamUnit(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="exRef" className="text-xs font-semibold text-slate-700">
+                      Valor de Referência
+                    </Label>
+                    <Input
+                      id="exRef"
+                      placeholder="Ex: 70 a 99 mg/dL"
+                      value={examReference}
+                      onChange={(e) => setExamReference(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="exStat" className="text-xs font-semibold text-slate-700">
+                      Status do Resultado
+                    </Label>
+                    <Select
+                      value={examStatus}
+                      onValueChange={(val) => setExamStatus(val as "Normal" | "Alterado")}
+                    >
+                      <SelectTrigger id="exStat">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Normal">Normal / Adequado</SelectItem>
+                        <SelectItem value="Alterado">Alterado / Fora de Faixa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold"
+                  >
+                    Salvar Exame no Prontuário
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Card className="border border-slate-200 shadow-sm bg-white">
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full text-xs text-left text-slate-700">
+                <thead className="bg-slate-50 text-slate-600 font-bold uppercase border-b border-slate-200">
+                  <tr>
+                    <th className="px-4 py-3">Exame</th>
+                    <th className="px-4 py-3">Resultado</th>
+                    <th className="px-4 py-3">Referência</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Data</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {examsList.map((ex) => (
+                    <tr key={ex.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-bold text-[#003366]">{ex.name}</td>
+                      <td className="px-4 py-3 font-extrabold text-slate-900">
+                        {ex.value} {ex.unit}
+                      </td>
+                      <td className="px-4 py-3 text-slate-500">{ex.reference}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                            ex.status === "Normal"
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-red-50 text-red-700"
+                          }`}
+                        >
+                          {ex.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-400">{ex.date}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ---------------- ABA 6: ANOTAÇÕES DO NUTRICIONISTA ---------------- */}
+      {activeTab === "notes" && (
+        <div className="space-y-6">
+          <Card className="border border-slate-200 shadow-sm bg-white">
+            <CardHeader className="pb-3 border-b border-slate-100">
+              <CardTitle className="text-base font-bold text-[#003366] flex items-center gap-2">
+                <FileText className="h-5 w-5 text-[#003366]" />
+                Anotações Clínicas & Diário de Evolução do Paciente
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              <form onSubmit={handleSaveNotes} className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700">
+                    Escrever Nova Observação / Evolução de Atendimento
+                  </Label>
+                  <textarea
+                    rows={4}
+                    className="w-full rounded-md border border-slate-200 p-3 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#003366]"
+                    placeholder="Digite anotacões sobre a consulta, comportamento do paciente, alteração de conduta..."
+                    value={clinicalNotes}
+                    onChange={(e) => setClinicalNotes(e.target.value)}
                   />
                 </div>
 
                 <Button
                   type="submit"
-                  className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold"
-                  disabled={loading}
+                  className="bg-[#003366] hover:bg-[#002244] text-white font-bold text-xs gap-1.5 shadow-sm"
                 >
-                  {loading ? "Salvando..." : "Salvar Refeição"}
+                  <Save className="h-4 w-4" />
+                  Salvar Anotação no Diário
                 </Button>
               </form>
-            </DialogContent>
-          </Dialog>
-        </div>
 
-        {/* Lista de Refeições */}
-        <div className="space-y-4">
-          {meals && meals.length > 0 ? (
-            meals.map((mealItem) => (
-              <Card key={mealItem.id} className="border border-slate-200 shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50 border-b border-slate-100">
-                  <div>
-                    <CardTitle className="text-sm font-bold text-[#003366]">
-                      {mealItem.name}
-                    </CardTitle>
-                    <p className="text-[11px] text-slate-500">
-                      {format(new Date(mealItem.meal_date), "dd/MM/yyyy", { locale: ptBR })}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs text-red-600 hover:bg-red-50"
-                    onClick={() => handleDeleteMeal(mealItem.id)}
+              {/* Linha do Tempo de Anotações Salvas */}
+              <div className="pt-4 border-t border-slate-100 space-y-3">
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Histórico de Registros Clínicos
+                </h4>
+                {notesHistory.map((n) => (
+                  <div
+                    key={n.id}
+                    className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1"
                   >
-                    Remover
-                  </Button>
-                </CardHeader>
-                <CardContent className="pt-3">
-                  {mealItem.items && mealItem.items.length > 0 ? (
-                    <ul className="space-y-2">
-                      {mealItem.items.map((item: any) => (
-                        <li
-                          key={item.id}
-                          className="flex items-center justify-between text-xs border-b border-slate-100 pb-1"
-                        >
-                          <span className="font-medium text-slate-800">
-                            {item.food?.name} — {item.quantity_grams}g
-                          </span>
-                          <span className="font-bold text-[#003366]">
-                            {Math.round(item.calculated_calories)} kcal
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-xs text-slate-400 italic">Nenhum alimento adicionado.</p>
-                  )}
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center bg-white space-y-2">
-              <Utensils className="h-8 w-8 text-slate-300 mx-auto" />
-              <p className="text-xs text-slate-500">Nenhuma refeição registrada na data de hoje.</p>
-            </div>
-          )}
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-[#003366] flex items-center gap-1">
+                        <Calendar className="h-3.5 w-3.5 inline" />
+                        {n.date}
+                      </span>
+                      <span className="text-[10px] text-slate-400">{n.author}</span>
+                    </div>
+                    <p className="text-xs text-slate-700 leading-relaxed pt-1">{n.content}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      )}
     </div>
   );
 }

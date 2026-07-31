@@ -215,115 +215,81 @@ function Header() {
 
         {/* Menu Desktop */}
         <nav className="hidden md:flex items-center gap-2 sm:gap-4">
-          {user ? (
-            <>
-              <Link
-                to="/app"
-                className="px-3 py-1.5 text-sm font-medium text-blue-100 hover:text-white hover:bg-[#002855] rounded transition-colors"
-              >
-                Início
-              </Link>
-              <Link
-                to="/app/patients"
-                className="px-3 py-1.5 text-sm font-medium text-blue-100 hover:text-white hover:bg-[#002855] rounded transition-colors"
-              >
-                Pacientes
-              </Link>
-              <Link
-                to="/app/foods"
-                className="px-3 py-1.5 text-sm font-medium text-blue-100 hover:text-white hover:bg-[#002855] rounded transition-colors"
-              >
-                Alimentos
-              </Link>
-              <Link
-                to="/app/orientations"
-                className="px-3 py-1.5 text-sm font-medium text-blue-100 hover:text-white hover:bg-[#002855] rounded transition-colors"
-              >
-                Orientações
-              </Link>
-              <button
-                onClick={async () => {
-                  await queryClient.cancelQueries();
-                  queryClient.clear();
-                  await supabase.auth.signOut();
-                }}
-                className="ml-2 px-3 py-1.5 text-xs font-semibold bg-amber-400 text-slate-900 hover:bg-amber-300 rounded transition-colors shadow-sm flex items-center gap-1"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                Sair
-              </button>
-            </>
-          ) : (
-            <Link
-              to="/auth"
-              search={{ mode: "signin" }}
-              className="inline-flex items-center justify-center rounded bg-[#FFCC00] px-4 py-1.5 text-sm font-bold text-[#003366] transition-colors hover:bg-amber-300 shadow"
-            >
-              Entrar no Sistema
-            </Link>
-          )}
-        </nav>
-
-        {/* Botão do Menu Hambúrguer Mobile */}
-        <div className="flex md:hidden items-center gap-2">
-          {user ? (
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-white hover:bg-[#002855] rounded-md focus:outline-none"
-              aria-label="Abrir menu"
-            >
-              {mobileMenuOpen ? (
-                <X className="h-6 w-6 text-amber-400" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </button>
-          ) : (
-            <Link
-              to="/auth"
-              search={{ mode: "signin" }}
-              className="inline-flex items-center justify-center rounded bg-[#FFCC00] px-3 py-1 text-xs font-bold text-[#003366]"
-            >
-              Entrar
-            </Link>
-          )}
-        </div>
-      </div>
-
-      {/* Drawer do Menu Mobile */}
-      {mobileMenuOpen && user && (
-        <div className="md:hidden border-t border-blue-900/80 bg-[#002855] px-4 pt-3 pb-5 space-y-2 shadow-inner">
           <Link
             to="/app"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold text-white hover:bg-[#003366] rounded"
+            className="px-3 py-1.5 text-sm font-medium text-blue-100 hover:text-white hover:bg-[#002855] rounded transition-colors"
           >
-            <ClipboardList className="h-4 w-4 text-amber-300" />
-            Início / Prontuários
+            Início
           </Link>
           <Link
             to="/app/patients"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold text-white hover:bg-[#003366] rounded"
+            className="px-3 py-1.5 text-sm font-medium text-blue-100 hover:text-white hover:bg-[#002855] rounded transition-colors"
           >
-            <Users className="h-4 w-4 text-amber-300" />
             Pacientes
           </Link>
           <Link
             to="/app/foods"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold text-white hover:bg-[#003366] rounded"
+            className="px-3 py-1.5 text-sm font-medium text-blue-100 hover:text-white hover:bg-[#002855] rounded transition-colors"
           >
-            <Utensils className="h-4 w-4 text-amber-300" />
-            Tabela de Alimentos
+            Alimentos
+          </Link>
+          <button
+            onClick={async () => {
+              await queryClient.cancelQueries();
+              queryClient.clear();
+              await supabase.auth.signOut();
+              window.location.href = "/auth?mode=signin";
+            }}
+            className="ml-2 px-3 py-1.5 text-xs font-semibold bg-amber-400 text-slate-900 hover:bg-amber-300 rounded transition-colors shadow-sm flex items-center gap-1"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            Sair
+          </button>
+        </nav>
+
+        {/* Botão do Menu Hambúrguer Mobile */}
+        <div className="flex md:hidden items-center gap-2">
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 text-white hover:bg-[#002855] rounded-md focus:outline-none flex items-center gap-1.5 bg-[#002855] border border-blue-800"
+            aria-label="Abrir menu mobile Sesc"
+          >
+            <span className="text-xs font-bold text-amber-300">Menu</span>
+            {mobileMenuOpen ? (
+              <X className="h-5 w-5 text-amber-400" />
+            ) : (
+              <Menu className="h-5 w-5 text-white" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Drawer do Menu Mobile */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-blue-900/80 bg-[#002855] px-4 pt-3 pb-5 space-y-2 shadow-inner">
+          <Link
+            to="/app"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2.5 px-3 py-2.5 text-sm font-semibold text-white hover:bg-[#003366] rounded"
+          >
+            <ClipboardList className="h-4 w-4 text-amber-300" />
+            Painel Clínico Sesc
           </Link>
           <Link
-            to="/app/orientations"
+            to="/app/patients"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold text-white hover:bg-[#003366] rounded"
+            className="flex items-center gap-2.5 px-3 py-2.5 text-sm font-semibold text-white hover:bg-[#003366] rounded"
           >
-            <BookOpen className="h-4 w-4 text-amber-300" />
-            Orientações MS
+            <Users className="h-4 w-4 text-amber-300" />
+            Prontuários dos Pacientes
+          </Link>
+          <Link
+            to="/app/foods"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2.5 px-3 py-2.5 text-sm font-semibold text-white hover:bg-[#003366] rounded"
+          >
+            <Utensils className="h-4 w-4 text-amber-300" />
+            Tabela de Alimentos TACO
           </Link>
           <div className="pt-2 border-t border-blue-800">
             <button
@@ -332,11 +298,12 @@ function Header() {
                 await queryClient.cancelQueries();
                 queryClient.clear();
                 await supabase.auth.signOut();
+                window.location.href = "/auth?mode=signin";
               }}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold bg-amber-400 text-slate-900 rounded"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-bold bg-amber-400 text-slate-900 rounded shadow"
             >
               <LogOut className="h-4 w-4" />
-              Sair da Conta
+              Alternar / Sair da Conta
             </button>
           </div>
         </div>
