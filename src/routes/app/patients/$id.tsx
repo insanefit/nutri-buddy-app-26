@@ -569,12 +569,12 @@ function PatientDetailPage() {
           </Dialog>
 
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+            className="text-xs text-rose-700 bg-rose-50/80 hover:bg-rose-600 hover:text-white border border-rose-200/80 font-bold rounded-xl px-3.5 py-2 transition-all duration-200 shadow-2xs flex items-center gap-1.5"
             onClick={handleDeletePatientCurrent}
           >
-            <Trash2 className="h-3.5 w-3.5 mr-1" />
+            <Trash2 className="h-3.5 w-3.5" />
             Excluir Prontuário
           </Button>
         </div>
@@ -972,27 +972,82 @@ function PatientDetailPage() {
       {/* ---------------- ABA 3: PLANO ALIMENTAR ---------------- */}
       {activeTab === "diet" && (
         <div className="space-y-6">
+          {/* Indicador de Meta Calórica Prescrita */}
+          {(() => {
+            const goalKcal = patient?.daily_calorie_goal || 2000;
+            const currentKcal = Math.round(totals?.kcal || 0);
+            const caloriePercent = Math.min(100, Math.round((currentKcal / goalKcal) * 100));
+
+            return (
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                  <span className="font-extrabold text-[#003366] flex items-center gap-1.5 text-sm">
+                    <Activity className="h-4 w-4 text-emerald-600" />
+                    Balanço Calórico Prescrito
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-slate-500">
+                      Meta Recomendada: <strong className="text-slate-900">{goalKcal} kcal</strong>
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span className="font-extrabold text-[#003366] bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+                      {currentKcal} kcal ({caloriePercent}%)
+                    </span>
+                  </div>
+                </div>
+                <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden p-0.5 border border-slate-200">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      caloriePercent > 105
+                        ? "bg-rose-500"
+                        : caloriePercent >= 80
+                          ? "bg-emerald-500"
+                          : "bg-[#003366]"
+                    }`}
+                    style={{ width: `${caloriePercent}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Cards Bento de Macronutrientes */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <MacroCard
               label="Calorias Prescritas"
               value={`${Math.round(totals?.kcal || 0)} kcal`}
+              color="blue"
             />
-            <MacroCard label="Proteínas Total" value={`${Math.round(totals?.protein || 0)} g`} />
-            <MacroCard label="Carboidratos Total" value={`${Math.round(totals?.carbs || 0)} g`} />
-            <MacroCard label="Gorduras Total" value={`${Math.round(totals?.fat || 0)} g`} />
+            <MacroCard
+              label="Proteínas Total"
+              value={`${Math.round(totals?.protein || 0)} g`}
+              color="emerald"
+            />
+            <MacroCard
+              label="Carboidratos Total"
+              value={`${Math.round(totals?.carbs || 0)} g`}
+              color="amber"
+            />
+            <MacroCard
+              label="Gorduras Total"
+              value={`${Math.round(totals?.fat || 0)} g`}
+              color="rose"
+            />
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs">
             <div>
-              <h3 className="text-sm font-bold text-[#003366]">Plano de Refeições Diárias</h3>
-              <p className="text-xs text-slate-500">
-                Adicione alimentos e porções prescritas por refeição
+              <h3 className="text-sm font-extrabold text-[#003366]">
+                Plano de Refeições Diárias Sesc
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Monte o cardápio fracionado e prescreva porções por horário
               </p>
             </div>
 
             <Dialog open={openMealDialog} onOpenChange={setOpenMealDialog}>
               <DialogTrigger asChild>
-                <Button className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold gap-1.5">
+                <Button className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold gap-1.5 rounded-xl shadow-xs">
                   <Plus className="h-4 w-4" />
                   Adicionar Refeição
                 </Button>
@@ -1006,7 +1061,7 @@ function PatientDetailPage() {
                 <form onSubmit={handleAddMeal} className="space-y-4 pt-2">
                   <div className="space-y-1.5">
                     <Label htmlFor="date" className="text-xs font-semibold text-slate-700">
-                      Data
+                      Data da Prescrição
                     </Label>
                     <Input
                       id="date"
@@ -1019,7 +1074,7 @@ function PatientDetailPage() {
 
                   <div className="space-y-1.5">
                     <Label htmlFor="mealName" className="text-xs font-semibold text-slate-700">
-                      Nome da Refeição
+                      Nome / Tipo de Refeição
                     </Label>
                     <Select value={mealName} onValueChange={setMealName}>
                       <SelectTrigger id="mealName">
@@ -1037,7 +1092,7 @@ function PatientDetailPage() {
 
                   <div className="space-y-1.5">
                     <Label htmlFor="food" className="text-xs font-semibold text-slate-700">
-                      Alimento
+                      Alimento da Tabela TACO
                     </Label>
                     <Select value={selectedFood} onValueChange={setSelectedFood}>
                       <SelectTrigger id="food">
@@ -1055,7 +1110,7 @@ function PatientDetailPage() {
 
                   <div className="space-y-1.5">
                     <Label htmlFor="quantity" className="text-xs font-semibold text-slate-700">
-                      Quantidade (gramas)
+                      Porção (gramas)
                     </Label>
                     <Input
                       id="quantity"
@@ -1072,7 +1127,7 @@ function PatientDetailPage() {
                     className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold"
                     disabled={loading}
                   >
-                    {loading ? "Salvando..." : "Salvar Refeição"}
+                    {loading ? "Salvando..." : "Salvar Refeição no Plano"}
                   </Button>
                 </form>
               </DialogContent>
@@ -1081,55 +1136,87 @@ function PatientDetailPage() {
 
           <div className="space-y-4">
             {meals && meals.length > 0 ? (
-              meals.map((mealItem) => (
-                <Card key={mealItem.id} className="border border-slate-200 shadow-sm">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50 border-b border-slate-100">
-                    <div>
-                      <CardTitle className="text-sm font-bold text-[#003366]">
-                        {mealItem.name}
-                      </CardTitle>
-                      <p className="text-[11px] text-slate-500">
-                        {format(new Date(mealItem.meal_date), "dd/MM/yyyy", { locale: ptBR })}
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs text-red-600 hover:bg-red-50"
-                      onClick={() => handleDeleteMeal(mealItem.id)}
-                    >
-                      Remover
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="pt-3">
-                    {mealItem.items && mealItem.items.length > 0 ? (
-                      <ul className="space-y-2">
-                        {mealItem.items.map((item: any) => (
-                          <li
-                            key={item.id}
-                            className="flex items-center justify-between text-xs border-b border-slate-100 pb-1"
-                          >
-                            <span className="font-medium text-slate-800">
-                              {item.food?.name} — {item.quantity_grams}g
-                            </span>
-                            <span className="font-bold text-[#003366]">
-                              {Math.round(item.calculated_calories)} kcal
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-xs text-slate-400 italic">Nenhum alimento adicionado.</p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))
+              meals.map((mealItem) => {
+                const mealKcal =
+                  mealItem.items?.reduce(
+                    (sum: number, it: any) => sum + (it.calculated_calories || 0),
+                    0,
+                  ) || 0;
+
+                return (
+                  <Card
+                    key={mealItem.id}
+                    className="border border-slate-200/90 shadow-xs rounded-2xl overflow-hidden bg-white"
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between p-4 bg-slate-50/80 border-b border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-blue-100 text-[#003366] font-bold flex items-center justify-center shrink-0">
+                          <Utensils className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-sm font-extrabold text-[#003366]">
+                            {mealItem.name}
+                          </CardTitle>
+                          <p className="text-[11px] text-slate-500 font-medium">
+                            {format(new Date(mealItem.meal_date), "dd/MM/yyyy", { locale: ptBR })} •{" "}
+                            <strong className="text-[#003366]">{Math.round(mealKcal)} kcal</strong>
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold"
+                        onClick={() => handleDeleteMeal(mealItem.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-1" />
+                        Remover
+                      </Button>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      {mealItem.items && mealItem.items.length > 0 ? (
+                        <div className="divide-y divide-slate-100">
+                          {mealItem.items.map((item: any) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center justify-between py-2 text-xs"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[#003366]" />
+                                <span className="font-semibold text-slate-800">
+                                  {item.food?.name}
+                                </span>
+                                <span className="text-[11px] font-medium text-slate-400">
+                                  ({item.quantity_grams}g)
+                                </span>
+                              </div>
+                              <span className="font-extrabold text-[#003366] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                                {Math.round(item.calculated_calories)} kcal
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-400 italic">
+                          Nenhum alimento registrado para esta refeição.
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })
             ) : (
-              <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center bg-white space-y-2">
-                <Utensils className="h-8 w-8 text-slate-300 mx-auto" />
-                <p className="text-xs text-slate-500">
-                  Nenhuma refeição registrada na data de hoje.
+              <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center bg-white space-y-2">
+                <Utensils className="h-10 w-10 text-slate-300 mx-auto" />
+                <p className="text-xs font-semibold text-slate-600">
+                  Nenhuma refeição prescrita na data de hoje.
                 </p>
+                <button
+                  onClick={() => setOpenMealDialog(true)}
+                  className="text-xs text-[#003366] font-bold underline inline-block"
+                >
+                  Adicionar primeira refeição ao plano
+                </button>
               </div>
             )}
           </div>
