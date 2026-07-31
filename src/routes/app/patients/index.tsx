@@ -181,9 +181,9 @@ function PatientsPage() {
         />
       </div>
 
-      {/* Grid de Cards dos Pacientes */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {patients?.map((patientItem) => {
+      {/* Grid de Cards dos Pacientes em Tamanho 100% Igual */}
+      <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 items-stretch">
+        {filteredPatients?.map((patientItem) => {
           const patientName =
             (patientItem.patient as any)?.full_name ||
             (patientItem.profile as any)?.full_name ||
@@ -191,15 +191,16 @@ function PatientsPage() {
               ? patientItem.notes.split("|")[0].replace("Paciente", "").trim()
               : null) ||
             "Paciente Sesc";
+
           return (
             <Card
               key={patientItem.id}
-              className="border border-slate-200 hover:border-[#003366] transition-all shadow-sm flex flex-col justify-between"
+              className="h-full border border-slate-200/90 hover:border-[#003366] transition-all shadow-xs hover:shadow-md bg-white rounded-2xl flex flex-col justify-between overflow-hidden group"
             >
-              <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
-                <div className="flex items-center gap-2 overflow-hidden">
-                  <div className="h-9 w-9 rounded-full bg-blue-50 text-[#003366] font-bold flex items-center justify-center text-sm shrink-0">
-                    <User className="h-4 w-4" />
+              <CardHeader className="pb-3 border-b border-slate-100/80 bg-slate-50/50 flex flex-row items-center justify-between">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="h-9 w-9 rounded-full bg-blue-100/80 text-[#003366] font-extrabold flex items-center justify-center text-xs shrink-0 border border-blue-200">
+                    {patientName.charAt(0).toUpperCase()}
                   </div>
                   <CardTitle className="text-sm font-bold text-[#003366] truncate">
                     {patientName}
@@ -208,29 +209,35 @@ function PatientsPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 shrink-0"
+                  className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg shrink-0"
                   title="Excluir paciente"
                   onClick={() => handleDeletePatient(patientItem.id, patientName)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </CardHeader>
-              <CardContent className="pt-4 space-y-3">
-                <div className="text-xs text-slate-600 space-y-1">
-                  <p>
-                    <span className="font-semibold text-slate-700">Meta:</span>{" "}
-                    {patientItem.daily_calorie_goal || 2000} kcal/dia
+              <CardContent className="pt-4 space-y-4 flex flex-col justify-between flex-1">
+                <div className="text-xs text-slate-600 space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <p className="flex justify-between items-center">
+                    <span className="font-semibold text-slate-500">Meta Calórica:</span>
+                    <strong className="font-bold text-[#003366]">
+                      {patientItem.daily_calorie_goal || 2000} kcal/dia
+                    </strong>
                   </p>
-                  <p className="text-[11px] text-slate-400">
-                    Cadastrado em: {new Date(patientItem.created_at).toLocaleDateString("pt-BR")}
+                  <p className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-400">Data de Cadastro:</span>
+                    <span className="font-medium text-slate-600">
+                      {new Date(patientItem.created_at).toLocaleDateString("pt-BR")}
+                    </span>
                   </p>
                 </div>
+
                 <Link
                   to="/app/patients/$id"
                   params={{ id: patientItem.id }}
-                  className="w-full border border-[#003366] text-[#003366] hover:bg-[#003366] hover:text-white transition-colors rounded-md py-2 px-3 font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm block text-center"
+                  className="w-full bg-blue-50 text-[#003366] hover:bg-[#003366] hover:text-white font-bold text-xs rounded-xl py-2.5 px-3.5 transition-all duration-200 flex items-center justify-center gap-2 shadow-2xs group-hover:bg-[#003366] group-hover:text-white"
                 >
-                  <FileText className="h-3.5 w-3.5 inline" />
+                  <FileText className="h-4 w-4" />
                   Abrir Prontuário Clínico
                 </Link>
               </CardContent>
