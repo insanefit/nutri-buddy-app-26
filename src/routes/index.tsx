@@ -28,13 +28,8 @@ function HomePage() {
       {/* Hero Section Institucional Sesc */}
       <section className="relative overflow-hidden bg-[#003366] text-white px-4 py-20 sm:px-6 lg:px-8 border-b-8 border-[#FFCC00] shadow-md">
         <div className="mx-auto max-w-4xl text-center space-y-6">
-          <div className="flex justify-center mb-4">
-            <div className="bg-white p-3 rounded-lg shadow-md inline-block">
-              <SescLogo className="h-16" />
-            </div>
-          </div>
           <h1 className="text-3xl font-extrabold tracking-tight sm:text-5xl leading-tight">
-            Saúde Nutricional
+            Saúde Nutricional Sesc
           </h1>
 
           <p className="mx-auto max-w-2xl text-base sm:text-lg text-blue-100 leading-relaxed">

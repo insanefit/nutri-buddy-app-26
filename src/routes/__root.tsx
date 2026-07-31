@@ -55,9 +55,6 @@ function ErrorComponent({ error }: { error: Error }) {
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-slate-50 px-4 py-12">
       <div className="max-w-md w-full text-center bg-white p-8 rounded-xl border border-slate-200 shadow-md space-y-4">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-[#003366]">
-          <SescLogo className="h-8" />
-        </div>
         <h1 className="text-lg font-bold text-[#003366]">Saúde Nutricional Sesc</h1>
         <p className="text-xs text-slate-600 leading-relaxed">Abrindo painel de atendimento...</p>
         <div className="pt-2 flex justify-center">
