@@ -29,6 +29,8 @@ export const Route = createFileRoute("/app/patients/")({
   component: PatientsPage,
 });
 
+import { Search } from "lucide-react";
+
 function PatientsPage() {
   const { data: patients, refetch } = useQuery({
     queryKey: ["patients"],
@@ -43,10 +45,20 @@ function PatientsPage() {
   });
 
   const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [calorieGoal, setCalorieGoal] = useState("2000");
   const [loading, setLoading] = useState(false);
+
+  const filteredPatients = patients?.filter((patientItem) => {
+    const pName =
+      (patientItem.patient as any)?.full_name ||
+      (patientItem.profile as any)?.full_name ||
+      patientItem.notes ||
+      "";
+    return pName.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,11 +96,11 @@ function PatientsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
       {/* Cabeçalho da Seção de Pacientes */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#003366]">Prontuários dos Pacientes</h1>
+          <h1 className="text-2xl font-extrabold text-[#003366]">Prontuários dos Pacientes</h1>
           <p className="mt-1 text-xs text-slate-600">
             Cadastre, acompanhe avaliações antropométricas, IMC e prescrições alimentares Sesc
           </p>
@@ -96,8 +108,8 @@ function PatientsPage() {
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-[#003366] hover:bg-[#002244] text-white font-semibold">
-              <Plus className="h-4 w-4 mr-1.5" />
+            <Button className="bg-[#003366] hover:bg-[#002244] text-white font-bold gap-1.5 shadow-sm">
+              <Plus className="h-4 w-4" />
               Novo Paciente
             </Button>
           </DialogTrigger>
@@ -156,6 +168,17 @@ function PatientsPage() {
             </form>
           </DialogContent>
         </Dialog>
+      </div>
+
+      {/* Barra de Pesquisa de Pacientes */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <Input
+          placeholder="Buscar prontuário por nome do paciente..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10 text-xs bg-white border-slate-200 shadow-xs focus:ring-1 focus:ring-[#003366]"
+        />
       </div>
 
       {/* Grid de Cards dos Pacientes */}
