@@ -48,6 +48,7 @@ import {
   Calendar,
   ShieldCheck,
   Lock,
+  FileCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -563,6 +564,7 @@ function PatientDetailPage() {
   const [quantity, setQuantity] = useState("100");
   const [openMealDialog, setOpenMealDialog] = useState(false);
   const [openPrescriptionDialog, setOpenPrescriptionDialog] = useState(false);
+  const [openContractDialog, setOpenContractDialog] = useState(false);
   const [prescriptionNotes] = useState(
     "Mastigar devagar. Evitar ingestão de líquidos durante as refeições principais. Seguir orientações do Guia Alimentar para a População Brasileira.",
   );
@@ -720,6 +722,164 @@ function PatientDetailPage() {
                   Encarregado de Proteção de Dados (DPO Sesc): <strong>dpo@sesc.com.br</strong>
                 </p>
               </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Termo de Prestação de Serviços Nutricionais & TCLE Sesc */}
+          <Dialog open={openContractDialog} onOpenChange={setOpenContractDialog}>
+            <DialogTrigger asChild>
+              <Button className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold gap-1.5 shadow-sm rounded-xl">
+                <FileCheck className="h-4 w-4" />
+                Imprimir Termo & TCLE Sesc
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-bold text-[#003366] flex items-center gap-2">
+                  <FileCheck className="h-5 w-5 text-[#003366]" />
+                  Termo de Prestação de Serviços Nutricionais & TCLE Sesc
+                </DialogTitle>
+              </DialogHeader>
+
+              {/* Documento do Termo e Contrato Imprimível */}
+              <div className="p-8 border border-slate-300 rounded bg-white space-y-6 text-slate-800 my-2 shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+                  <SescLogo className="h-12" />
+                  <div className="text-right">
+                    <h3 className="font-extrabold text-[#003366] text-sm uppercase">
+                      SERVIÇO SOCIAL DO COMÉRCIO - SESC
+                    </h3>
+                    <p className="text-[11px] text-slate-500 font-semibold">
+                      Termo de Prestação de Serviços Nutricionais & TCLE
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div>
+                    <span className="font-bold text-slate-500 block uppercase tracking-wider text-[10px]">
+                      PACIENTE / TITULAR:
+                    </span>
+                    <span className="text-slate-900 font-extrabold text-sm">{patientName}</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-500 block uppercase tracking-wider text-[10px]">
+                      CATEGORIA INSTITUCIONAL:
+                    </span>
+                    <span className="text-[#003366] font-extrabold">
+                      {patient?.notes?.toLowerCase().includes("dependente")
+                        ? "Dependente de Comerciário"
+                        : patient?.notes?.toLowerCase().includes("público geral")
+                          ? "Público Geral"
+                          : "Comerciário (Trabalhador do Comércio)"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-500 block uppercase tracking-wider text-[10px]">
+                      DATA DA EMISSÃO:
+                    </span>
+                    <span className="text-slate-900 font-bold">
+                      {format(new Date(), "dd/MM/yyyy")}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-500 block uppercase tracking-wider text-[10px]">
+                      UNIDADE SESC:
+                    </span>
+                    <span className="text-slate-900 font-bold">Unidade de Saúde & Nutrição</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4 text-xs leading-relaxed text-slate-700">
+                  <div>
+                    <h4 className="font-extrabold text-[#003366] uppercase text-[11px] border-b border-slate-200 pb-1 mb-1.5">
+                      CLÁUSULA 1ª — DO OBJETO DO ATENDIMENTO
+                    </h4>
+                    <p>
+                      O presente termo tem por objeto a prestação de serviços de assistência
+                      nutricional pela equipe técnica do <strong>Sesc</strong>, incluindo anamnese
+                      clínica, avaliação antropométrica, triagem de sinais vitais (pressão arterial
+                      e glicemia capilar), prescrição e acompanhamento de planos alimentares
+                      personalizados.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="font-extrabold text-[#003366] uppercase text-[11px] border-b border-slate-200 pb-1 mb-1.5">
+                      CLÁUSULA 2ª — DAS RESPONSABILIDADES DO PACIENTE
+                    </h4>
+                    <p>
+                      O(a) paciente compromete-se a fornecer informações verídicas e completas sobre
+                      seu histórico clínico, diagnósticos médicos, uso de medicamentos, alergias e
+                      hábitos alimentares, ciente de que a exatidão dos dados é essencial para a
+                      segurança e eficácia das prescrições.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="font-extrabold text-[#003366] uppercase text-[11px] border-b border-slate-200 pb-1 mb-1.5">
+                      CLÁUSULA 3ª — DO SIGILO PROFISSIONAL E ÉTICA (CFN)
+                    </h4>
+                    <p>
+                      A equipe de nutrição do Sesc compromete-se a manter rigoroso sigilo
+                      profissional sobre todas as informações coletadas durante o atendimento, em
+                      estrita observância ao Código de Ética e Conduta do Nutricionista (Resolução
+                      CFN nº 599/2018).
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="font-extrabold text-[#003366] uppercase text-[11px] border-b border-slate-200 pb-1 mb-1.5">
+                      CLÁUSULA 4ª — DO TRATAMENTO DE DADOS PESSOAIS (LGPD)
+                    </h4>
+                    <p>
+                      Em conformidade com a{" "}
+                      <strong>
+                        Lei Geral de Proteção de Dados (Lei nº 13.709/2018 - Art. 5º, II e Art. 11)
+                      </strong>
+                      , o(a) paciente declara ciência e autoriza expressamente o Sesc a realizar o
+                      tratamento de seus <strong>dados pessoais sensíveis de saúde</strong>{" "}
+                      exclusivamente para fins de acompanhamento nutricional clínico e estatísticas
+                      institucionais anonimizadas.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Bloco de Assinaturas */}
+                <div className="pt-12 grid grid-cols-2 gap-8 text-center border-t border-slate-200 mt-8">
+                  <div>
+                    <div className="border-t border-slate-400 mb-1 mx-4" />
+                    <p className="text-xs font-bold text-slate-800">{patientName}</p>
+                    <p className="text-[10px] text-slate-400">
+                      Assinatura do Paciente / Responsável Legal
+                    </p>
+                  </div>
+                  <div>
+                    <div className="border-t border-slate-400 mb-1 mx-4" />
+                    <p className="text-xs font-bold text-[#003366]">
+                      Equipe de Nutrição Clínica Sesc
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      Carimbo e Assinatura do Profissional (CRN)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-[9px] text-slate-400 pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <span>
+                    🔒 Documento oficial emitido pelo Sistema de Saúde Nutricional Sesc em
+                    conformidade com a LGPD (Lei 13.709/18).
+                  </span>
+                  <span>Via do Prontuário / Paciente</span>
+                </div>
+              </div>
+
+              <Button
+                onClick={() => window.print()}
+                className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold rounded-xl py-3 shadow-xs"
+              >
+                Imprimir Termo de Prestação de Serviços (PDF)
+              </Button>
             </DialogContent>
           </Dialog>
 
