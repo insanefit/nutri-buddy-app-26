@@ -53,6 +53,7 @@ function PatientsPage() {
     "comerciario",
   );
   const [calorieGoal, setCalorieGoal] = useState("2000");
+  const [lgpdConsent, setLgpdConsent] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const filteredPatients = patients?.filter((patientItem) => {
@@ -239,12 +240,35 @@ function PatientsPage() {
                 </div>
               </div>
 
+              {/* Termo de Consentimento LGPD da Saúde (Lei nº 13.709/2018) */}
+              <div className="p-3 bg-blue-50/80 border border-blue-200/90 rounded-xl space-y-2 text-xs">
+                <div className="flex items-start gap-2.5">
+                  <input
+                    type="checkbox"
+                    id="lgpdConsent"
+                    checked={lgpdConsent}
+                    onChange={(e) => setLgpdConsent(e.target.checked)}
+                    required
+                    className="mt-0.5 h-4 w-4 text-[#003366] rounded border-slate-300 focus:ring-[#003366]"
+                  />
+                  <label
+                    htmlFor="lgpdConsent"
+                    className="text-slate-700 font-medium text-[11px] leading-relaxed cursor-pointer"
+                  >
+                    Declaro ciência e autorizo o tratamento dos{" "}
+                    <strong>dados pessoais sensíveis de saúde</strong> (prontuário, antropometria e
+                    triagem) pelo <strong>Sesc</strong> para fins exclusivos de acompanhamento
+                    nutricional, conforme a <strong>LGPD (Lei nº 13.709/2018)</strong>.
+                  </label>
+                </div>
+              </div>
+
               <Button
                 type="submit"
                 className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold py-2.5 rounded-xl shadow-xs"
-                disabled={loading}
+                disabled={loading || !lgpdConsent}
               >
-                {loading ? "Salvando..." : "Salvar Prontuário"}
+                {loading ? "Salvando..." : "Salvar Prontuário com Aceite LGPD"}
               </Button>
             </form>
           </DialogContent>

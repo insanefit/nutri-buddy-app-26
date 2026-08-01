@@ -46,6 +46,8 @@ import {
   FlaskConical,
   Save,
   Calendar,
+  ShieldCheck,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -661,6 +663,10 @@ function PatientDetailPage() {
                 >
                   {catBadge.text}
                 </span>
+                <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full border border-blue-200 bg-blue-50 text-[#003366] flex items-center gap-1">
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                  LGPD Protegido (Lei 13.709/18)
+                </span>
               </div>
             );
           })()}
@@ -671,6 +677,52 @@ function PatientDetailPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Modal de Conformidade LGPD & Direitos do Titular */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold gap-1.5 rounded-xl"
+              >
+                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                Conformidade LGPD
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-base font-bold text-[#003366] flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                  Proteção de Dados Sensíveis (LGPD)
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 text-xs text-slate-700 pt-2">
+                <p className="leading-relaxed">
+                  Em conformidade com a{" "}
+                  <strong>
+                    Lei Geral de Proteção de Dados (Lei nº 13.709/2018 - Art. 5º, II e Art. 11)
+                  </strong>
+                  , os dados de saúde deste prontuário são classificados como{" "}
+                  <strong>dados pessoais sensíveis</strong>.
+                </p>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                  <strong className="text-[#003366] block">
+                    Direitos do Paciente (Artigo 18):
+                  </strong>
+                  <ul className="list-disc pl-4 space-y-1 text-[11px] text-slate-600">
+                    <li>Confirmação da existência de tratamento dos dados.</li>
+                    <li>Acesso rápido ao histórico de consultas e prescrições.</li>
+                    <li>Correção de dados incompletos ou desatualizados.</li>
+                    <li>Eliminação ou anonimização de dados a pedido do titular.</li>
+                    <li>Revogação do consentimento a qualquer momento.</li>
+                  </ul>
+                </div>
+                <p className="text-[11px] text-slate-500 italic border-t border-slate-100 pt-2">
+                  Encarregado de Proteção de Dados (DPO Sesc): <strong>dpo@sesc.com.br</strong>
+                </p>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           {/* Emitir Receita / Prescrição Sesc */}
           <Dialog open={openPrescriptionDialog} onOpenChange={setOpenPrescriptionDialog}>
             <DialogTrigger asChild>
@@ -776,12 +828,21 @@ function PatientDetailPage() {
                   </p>
                 </div>
 
-                <div className="pt-8 flex flex-col items-center justify-center text-center border-t border-slate-200">
-                  <div className="w-48 border-t border-slate-400 mb-1" />
-                  <p className="text-xs font-bold text-[#003366]">
-                    Equipe de Nutrição Clínica Sesc
-                  </p>
-                  <p className="text-[10px] text-slate-400">CRN Região Amapá</p>
+                <div className="pt-6 flex flex-col items-center justify-center text-center border-t border-slate-200 space-y-3">
+                  <div className="w-48 border-t border-slate-400 mb-0.5" />
+                  <div>
+                    <p className="text-xs font-bold text-[#003366]">
+                      Equipe de Nutrição Clínica Sesc
+                    </p>
+                    <p className="text-[10px] text-slate-400">CRN Região Amapá</p>
+                  </div>
+                  <div className="text-[9px] text-slate-400 pt-2 border-t border-slate-100 w-full flex items-center justify-between">
+                    <span>
+                      🔒 Documento com dados pessoais sensíveis de saúde protegidos pela LGPD (Lei
+                      nº 13.709/2018).
+                    </span>
+                    <span>Sesc Saúde Nutricional</span>
+                  </div>
                 </div>
               </div>
 
