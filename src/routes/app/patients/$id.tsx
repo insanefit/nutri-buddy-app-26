@@ -870,19 +870,37 @@ function PatientDetailPage() {
 
                 <div className="text-[9px] text-slate-400 pt-3 border-t border-slate-100 flex items-center justify-between">
                   <span>
-                    🔒 Documento oficial emitido pelo Sistema de Saúde Nutricional Sesc em
-                    conformidade com a LGPD (Lei 13.709/18).
+                    🔒 Documento oficial compatível com{" "}
+                    <strong>Assinador Digital Sesc (Certificação ICP-Brasil / Gov.br)</strong> e
+                    LGPD.
                   </span>
                   <span>Via do Prontuário / Paciente</span>
                 </div>
               </div>
 
-              <Button
-                onClick={() => window.print()}
-                className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold rounded-xl py-3 shadow-xs"
-              >
-                Imprimir Termo de Prestação de Serviços (PDF)
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  onClick={() => window.print()}
+                  className="flex-1 bg-[#003366] hover:bg-[#002244] text-white font-bold rounded-xl py-2.5 text-xs gap-1.5 shadow-xs"
+                >
+                  <Printer className="h-4 w-4" />
+                  Imprimir Termo (PDF)
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    toast.success(
+                      "Documento formatado e pronto para upload no Assinador Digital Sesc!",
+                    );
+                    window.print();
+                  }}
+                  className="flex-1 border-[#003366] text-[#003366] hover:bg-blue-50 font-bold rounded-xl py-2.5 text-xs gap-1.5"
+                >
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  Exportar p/ Assinador Digital Sesc
+                </Button>
+              </div>
             </DialogContent>
           </Dialog>
 
@@ -1006,20 +1024,37 @@ function PatientDetailPage() {
                   </div>
                   <div className="text-[9px] text-slate-400 pt-2 border-t border-slate-100 w-full flex items-center justify-between">
                     <span>
-                      🔒 Documento com dados pessoais sensíveis de saúde protegidos pela LGPD (Lei
-                      nº 13.709/2018).
+                      🔒 Documento compatível com{" "}
+                      <strong>Assinador Digital Sesc (ICP-Brasil / Gov.br)</strong> e LGPD.
                     </span>
                     <span>Sesc Saúde Nutricional</span>
                   </div>
                 </div>
               </div>
 
-              <Button
-                onClick={() => window.print()}
-                className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold"
-              >
-                Imprimir Documento
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  onClick={() => window.print()}
+                  className="flex-1 bg-[#003366] hover:bg-[#002244] text-white font-bold rounded-xl py-2.5 text-xs gap-1.5 shadow-xs"
+                >
+                  <Printer className="h-4 w-4" />
+                  Imprimir Prescrição (PDF)
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    toast.success(
+                      "Prescrição formatada e pronta para upload no Assinador Digital Sesc!",
+                    );
+                    window.print();
+                  }}
+                  className="flex-1 border-[#003366] text-[#003366] hover:bg-blue-50 font-bold rounded-xl py-2.5 text-xs gap-1.5"
+                >
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  Exportar p/ Assinador Digital Sesc
+                </Button>
+              </div>
             </DialogContent>
           </Dialog>
 
