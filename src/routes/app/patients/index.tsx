@@ -53,13 +53,13 @@ function PatientsPage() {
     "comerciario",
   );
   const [calorieGoal, setCalorieGoal] = useState("2000");
-  const [lgpdConsent, setLgpdConsent] = useState(true);
+  const [lgpdConsent, setLgpdConsent] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const filteredPatients = patients?.filter((patientItem) => {
     const pName =
-      (patientItem.patient as any)?.full_name ||
-      (patientItem.profile as any)?.full_name ||
+      (patientItem.patient as { full_name?: string } | null)?.full_name ||
+      (patientItem as { profile?: { full_name?: string } })?.profile?.full_name ||
       patientItem.notes ||
       "";
     return pName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -98,8 +98,9 @@ function PatientsPage() {
       setCalorieGoal("2000");
       setOpen(false);
       refetch();
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao cadastrar paciente");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao cadastrar paciente";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -111,8 +112,9 @@ function PatientsPage() {
       await deletePatient({ data: patientId });
       toast.success("Prontuário do paciente excluído");
       refetch();
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao excluir paciente");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao excluir paciente";
+      toast.error(msg);
     }
   };
 
@@ -290,8 +292,8 @@ function PatientsPage() {
       <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 items-stretch">
         {filteredPatients?.map((patientItem) => {
           const patientName =
-            (patientItem.patient as any)?.full_name ||
-            (patientItem.profile as any)?.full_name ||
+            (patientItem.patient as { full_name?: string } | null)?.full_name ||
+            (patientItem as { profile?: { full_name?: string } })?.profile?.full_name ||
             (patientItem.notes && patientItem.notes.includes("|")
               ? patientItem.notes.split("|")[0].replace("Paciente", "").trim()
               : null) ||

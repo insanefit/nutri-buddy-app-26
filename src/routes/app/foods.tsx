@@ -74,8 +74,9 @@ function FoodsPage() {
       setFat("");
       setOpen(false);
       refetch();
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao cadastrar alimento");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao cadastrar alimento";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

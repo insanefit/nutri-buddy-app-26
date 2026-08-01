@@ -35,6 +35,9 @@ function AppLayout() {
     }
 
     checkAuth();
+    return () => {
+      isMounted = false;
+    };
   }, [navigate]);
 
   if (!ready) {

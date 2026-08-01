@@ -166,3 +166,38 @@
     color: var(--color-foreground);
   }
 }
+
+/* Regras de Estilização de Impressão Profissional (@media print) */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 12pt !important;
+  }
+
+  header,
+  nav,
+  button,
+  .no-print,
+  [role="dialog"] > button,
+  .aria-hidden {
+    display: none !important;
+  }
+
+  [role="dialog"] {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .print-page-break {
+    page-break-inside: avoid;
+  }
+}

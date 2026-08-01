@@ -59,14 +59,7 @@ export const createPatient = createServerFn({ method: "POST" })
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    const nutritionistId = user?.id || "64fb19c4-c829-4b17-b540-d3e8cbbfcc07";
-
-    const newPatientProfileId = crypto.randomUUID();
-    await supabase.from("profiles").insert({
-      id: newPatientProfileId,
-      full_name: data.full_name,
-      role: "patient",
-    });
+    if (!user) throw new Error("Acesso negado. Usuário não autenticado.");
 
     const categoryLabels: Record<string, string> = {
       comerciario: "Comerciário",
@@ -76,17 +69,33 @@ export const createPatient = createServerFn({ method: "POST" })
     const catLabel = categoryLabels[data.category] || "Comerciário";
     const phoneText = data.phone ? ` | Telefone: ${data.phone}` : "";
 
-    const { error } = await supabase.from("patients").insert({
-      nutritionist_id: nutritionistId,
-      patient_id: newPatientProfileId,
-      daily_calorie_goal: data.daily_calorie_goal || 2000,
-      notes: `Categoria: ${catLabel}${phoneText} | E-mail: ${data.patient_email} | ${data.notes || ""}`,
-    });
+    const lgpdRecord = {
+      categoryLabel: catLabel,
+      phone: data.phone || "",
+      email: data.patient_email,
+      full_name: data.full_name,
+      notes: data.notes || "",
+      lgpd_consented_at: new Date().toISOString(),
+      lgpd_version: "1.0",
+      lgpd_consent_status: true,
+    };
+
+    const { data: inserted, error } = await supabase
+      .from("patients")
+      .insert({
+        nutritionist_id: user.id,
+        patient_id: user.id,
+        daily_calorie_goal: data.daily_calorie_goal || 2000,
+        notes: JSON.stringify(lgpdRecord),
+      })
+      .select()
+      .single();
 
     if (error) {
       console.error("[createPatient] Error:", error.message);
+      throw new Error(`Falha ao cadastrar paciente no banco de dados: ${error.message}`);
     }
-    return { ok: true };
+    return inserted;
   });
 
 const foodSchema = z.object({
@@ -1455,7 +1464,15 @@ const DEFAULT_SESC_FOODS = [
   },
 ];
 
-function calculateMacros(quantity: number, food: any) {
+function calculateMacros(
+  quantity: number,
+  food: {
+    calories_per_100g?: number;
+    protein_per_100g?: number;
+    carbs_per_100g?: number;
+    fat_per_100g?: number;
+  },
+) {
   const ratio = quantity / 100;
   return {
     calculated_calories: Number((Number(food.calories_per_100g || 0) * ratio).toFixed(2)),
@@ -1493,40 +1510,42 @@ export const upsertProfile = createServerFn({ method: "POST" })
   });
 
 export const getPatients = createServerFn({ method: "GET" }).handler(async () => {
-  try {
-    const { data, error } = await supabase
-      .from("patients")
-      .select("*, patient:profiles!patients_patient_id_fkey(full_name, avatar_url)")
-      .order("created_at", { ascending: false });
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Acesso negado. Faça login para acessar os prontuários.");
 
-    if (error || !data || data.length === 0) {
-      return DEFAULT_SESC_PATIENTS;
-    }
-    return data;
-  } catch (err) {
-    return DEFAULT_SESC_PATIENTS;
+  const { data, error } = await supabase
+    .from("patients")
+    .select("*, patient:profiles!patients_patient_id_fkey(full_name, avatar_url)")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("[getPatients] Error:", error.message);
+    return [];
   }
+  return data || [];
 });
 
 export const getPatient = createServerFn({ method: "GET" })
   .inputValidator((id: string) => z.string().parse(id))
   .handler(async ({ data: id }) => {
-    try {
-      const { data, error } = await supabase
-        .from("patients")
-        .select("*, patient:profiles!patients_patient_id_fkey(full_name, avatar_url)")
-        .eq("id", id)
-        .maybeSingle();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("Acesso negado. Faça login para acessar o prontuário.");
 
-      if (error || !data) {
-        const found = DEFAULT_SESC_PATIENTS.find((p) => p.id === id);
-        return found || DEFAULT_SESC_PATIENTS[0];
-      }
-      return data;
-    } catch (err) {
-      const found = DEFAULT_SESC_PATIENTS.find((p) => p.id === id);
-      return found || DEFAULT_SESC_PATIENTS[0];
+    const { data, error } = await supabase
+      .from("patients")
+      .select("*, patient:profiles!patients_patient_id_fkey(full_name, avatar_url)")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("[getPatient] Error:", error.message);
+      return null;
     }
+    return data;
   });
 
 export const getFoods = createServerFn({ method: "GET" }).handler(async () => {
@@ -1547,10 +1566,11 @@ export const createFood = createServerFn({ method: "POST" })
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    if (!user) throw new Error("Acesso negado.");
     const { error } = await supabase.from("foods").insert({
       ...data,
       is_custom: true,
-      created_by: user?.id || null,
+      created_by: user.id,
     });
     if (error) throw error;
     return { ok: true };
@@ -1561,73 +1581,23 @@ export const getMealsForPatient = createServerFn({ method: "GET" })
     z.object({ patient_id: z.string(), date: z.string() }).parse(input),
   )
   .handler(async ({ data }) => {
-    try {
-      const { data: meals, error } = await supabase
-        .from("meals")
-        .select("*, items:meal_items(*, food:foods(*))")
-        .eq("patient_id", data.patient_id)
-        .eq("meal_date", data.date)
-        .order("created_at");
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("Acesso negado.");
 
-      if (error || !meals || meals.length === 0) {
-        // Retorna refeições de exemplo do Sesc se estiver vazio
-        return [
-          {
-            id: "m1",
-            name: "Café da Manhã Energético",
-            meal_date: data.date,
-            items: [
-              {
-                id: "mi1",
-                quantity_grams: 100,
-                calculated_calories: 140,
-                calculated_protein: 12,
-                calculated_carbs: 1.1,
-                calculated_fat: 9.5,
-                food: DEFAULT_SESC_FOODS[2],
-              },
-              {
-                id: "mi2",
-                quantity_grams: 30,
-                calculated_calories: 117,
-                calculated_protein: 4.2,
-                calculated_carbs: 19.8,
-                calculated_fat: 2.1,
-                food: DEFAULT_SESC_FOODS[3],
-              },
-            ],
-          },
-          {
-            id: "m2",
-            name: "Almoço Institucional Sesc",
-            meal_date: data.date,
-            items: [
-              {
-                id: "mi3",
-                quantity_grams: 150,
-                calculated_calories: 186,
-                calculated_protein: 3.9,
-                calculated_carbs: 38.7,
-                calculated_fat: 1.5,
-                food: DEFAULT_SESC_FOODS[0],
-              },
-              {
-                id: "mi4",
-                quantity_grams: 120,
-                calculated_calories: 198,
-                calculated_protein: 37.2,
-                calculated_carbs: 0.0,
-                calculated_fat: 4.3,
-                food: DEFAULT_SESC_FOODS[1],
-              },
-            ],
-          },
-        ];
-      }
-      return meals;
-    } catch (err) {
+    const { data: meals, error } = await supabase
+      .from("meals")
+      .select("*, items:meal_items(*, food:foods(*))")
+      .eq("patient_id", data.patient_id)
+      .eq("meal_date", data.date)
+      .order("created_at");
+
+    if (error) {
+      console.error("[getMealsForPatient] Error:", error.message);
       return [];
     }
+    return meals || [];
   });
 
 export const createMeal = createServerFn({ method: "POST" })
@@ -1636,23 +1606,32 @@ export const createMeal = createServerFn({ method: "POST" })
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    const nutritionistId = user?.id || "64fb19c4-c829-4b17-b540-d3e8cbbfcc07";
+    if (!user) throw new Error("Acesso negado. Faça login para registrar refeições.");
 
     const { data: meal, error } = await supabase
       .from("meals")
       .insert({
         ...data,
-        nutritionist_id: nutritionistId,
+        nutritionist_id: user.id,
       })
       .select("id")
       .single();
-    if (error) return { id: crypto.randomUUID() };
+
+    if (error) {
+      console.error("[createMeal] Error:", error.message);
+      throw new Error(`Falha ao registrar refeição no banco de dados: ${error.message}`);
+    }
     return meal;
   });
 
 export const addMealItem = createServerFn({ method: "POST" })
   .inputValidator((input) => mealItemSchema.parse(input))
   .handler(async ({ data }) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("Acesso negado.");
+
     const { data: food } = await supabase
       .from("foods")
       .select("*")
@@ -1664,32 +1643,140 @@ export const addMealItem = createServerFn({ method: "POST" })
 
     const macros = calculateMacros(data.quantity_grams, targetFood);
 
-    await supabase.from("meal_items").insert({
+    const { error } = await supabase.from("meal_items").insert({
       meal_id: data.meal_id,
       food_id: data.food_id,
       quantity_grams: data.quantity_grams,
       ...macros,
     });
+
+    if (error) throw new Error(`Falha ao adicionar alimento: ${error.message}`);
     return { ok: true };
   });
 
 export const deleteMealItem = createServerFn({ method: "POST" })
   .inputValidator((id: string) => z.string().parse(id))
   .handler(async ({ data: id }) => {
-    await supabase.from("meal_items").delete().eq("id", id);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("Acesso negado.");
+
+    const { error } = await supabase.from("meal_items").delete().eq("id", id);
+    if (error) throw new Error(`Falha ao excluir item: ${error.message}`);
     return { ok: true };
   });
 
 export const deleteMeal = createServerFn({ method: "POST" })
   .inputValidator((id: string) => z.string().parse(id))
   .handler(async ({ data: id }) => {
-    await supabase.from("meals").delete().eq("id", id);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("Acesso negado.");
+
+    const { error } = await supabase.from("meals").delete().eq("id", id);
+    if (error) throw new Error(`Falha ao excluir refeição: ${error.message}`);
     return { ok: true };
   });
 
 export const deletePatient = createServerFn({ method: "POST" })
   .inputValidator((id: string) => z.string().parse(id))
   .handler(async ({ data: id }) => {
-    await supabase.from("patients").delete().eq("id", id);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("Acesso negado.");
+
+    const { error } = await supabase.from("patients").delete().eq("id", id);
+    if (error) throw new Error(`Falha ao excluir paciente: ${error.message}`);
     return { ok: true };
+  });
+
+const clinicalDataSchema = z.object({
+  patient_id: z.string(),
+  weight: z.string().optional(),
+  height: z.string().optional(),
+  waist: z.string().optional(),
+  hip: z.string().optional(),
+  abdomen: z.string().optional(),
+  chest: z.string().optional(),
+  rightArm: z.string().optional(),
+  leftArm: z.string().optional(),
+  rightThigh: z.string().optional(),
+  leftThigh: z.string().optional(),
+  bodyFat: z.string().optional(),
+  systolicBP: z.string().optional(),
+  diastolicBP: z.string().optional(),
+  glucoseValue: z.string().optional(),
+  glucoseType: z.enum(["jejum", "casual"]).optional(),
+  anamnesis: z
+    .array(z.object({ id: z.string(), question: z.string(), answer: z.string() }))
+    .optional(),
+  clinicalNotes: z.string().optional(),
+});
+
+export const updatePatientClinicalData = createServerFn({ method: "POST" })
+  .inputValidator((input) => clinicalDataSchema.parse(input))
+  .handler(async ({ data }) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("Acesso negado.");
+
+    const { data: currentPatient, error: fetchErr } = await supabase
+      .from("patients")
+      .select("notes")
+      .eq("id", data.patient_id)
+      .single();
+
+    if (fetchErr) {
+      throw new Error(`Erro ao localizar paciente: ${fetchErr.message}`);
+    }
+
+    let existingObj: Record<string, unknown> = {};
+    try {
+      if (currentPatient.notes && currentPatient.notes.startsWith("{")) {
+        existingObj = JSON.parse(currentPatient.notes);
+      } else {
+        existingObj = { legacyNotes: currentPatient.notes || "" };
+      }
+    } catch {
+      existingObj = { legacyNotes: currentPatient.notes || "" };
+    }
+
+    const updatedNotesObj = {
+      ...existingObj,
+      ...(data.weight !== undefined && { weight: data.weight }),
+      ...(data.height !== undefined && { height: data.height }),
+      ...(data.waist !== undefined && { waist: data.waist }),
+      ...(data.hip !== undefined && { hip: data.hip }),
+      ...(data.abdomen !== undefined && { abdomen: data.abdomen }),
+      ...(data.chest !== undefined && { chest: data.chest }),
+      ...(data.rightArm !== undefined && { rightArm: data.rightArm }),
+      ...(data.leftArm !== undefined && { leftArm: data.leftArm }),
+      ...(data.rightThigh !== undefined && { rightThigh: data.rightThigh }),
+      ...(data.leftThigh !== undefined && { leftThigh: data.leftThigh }),
+      ...(data.bodyFat !== undefined && { bodyFat: data.bodyFat }),
+      ...(data.systolicBP !== undefined && { systolicBP: data.systolicBP }),
+      ...(data.diastolicBP !== undefined && { diastolicBP: data.diastolicBP }),
+      ...(data.glucoseValue !== undefined && { glucoseValue: data.glucoseValue }),
+      ...(data.glucoseType !== undefined && { glucoseType: data.glucoseType }),
+      ...(data.anamnesis !== undefined && { anamnesis: data.anamnesis }),
+      ...(data.clinicalNotes !== undefined && { clinicalNotes: data.clinicalNotes }),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error: updateErr } = await supabase
+      .from("patients")
+      .update({
+        notes: JSON.stringify(updatedNotesObj),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.patient_id);
+
+    if (updateErr) {
+      throw new Error(`Erro ao atualizar prontuário: ${updateErr.message}`);
+    }
+    return { ok: true, notes: updatedNotesObj };
   });

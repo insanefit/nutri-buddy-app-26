@@ -73,7 +73,7 @@ function AuthPage() {
           console.error("[Login Auth Error]:", error);
           if (error.message.includes("Invalid login credentials")) {
             throw new Error(
-              "Credenciais incorretas. Use o e-mail mtiago@sescamapa.com.br e a senha Sesc@Amapa2026",
+              "E-mail ou senha incorretos. Verifique suas credenciais de acesso Sesc.",
             );
           }
           throw error;
@@ -83,8 +83,9 @@ function AuthPage() {
           window.location.href = "/app";
         }
       }
-    } catch (err: any) {
-      toast.error(err.message || "Erro de conexão ao autenticar.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro de conexão ao autenticar.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

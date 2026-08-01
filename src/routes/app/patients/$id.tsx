@@ -11,6 +11,7 @@ import {
   addMealItem,
   deleteMeal,
   deletePatient,
+  updatePatientClinicalData,
 } from "@/lib/nutrition.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -127,69 +128,94 @@ function PatientDetailPage() {
   });
 
   const patientName =
-    (patient?.patient as any)?.full_name ||
-    (patient?.profile as any)?.full_name ||
+    (patient?.patient as { full_name?: string } | null)?.full_name ||
+    (patient as { profile?: { full_name?: string } } | null)?.profile?.full_name ||
     (patient?.notes && patient.notes.includes("|")
       ? patient.notes.split("|")[0].replace("Paciente", "").trim()
       : null) ||
     "Paciente Sesc";
 
-  // Classificação de Pressão Arterial (Diretriz Brasileira de Hipertensão - SBC)
+  // Classificação de Pressão Arterial (Diretriz Brasileira de Hipertensão Arterial 2025 - SBC)
   function getBloodPressureClassification(systolic: number, diastolic: number) {
     if (!systolic || !diastolic || systolic <= 0 || diastolic <= 0) return null;
 
-    if (systolic < 120 && diastolic < 80) {
-      return {
-        status: "Ótima (Pressão Ótima)",
-        description: "Pressão arterial em nível ideal.",
-        color: "text-emerald-700 bg-emerald-50 border-emerald-200",
-      };
-    }
-    if (systolic <= 129 && diastolic <= 84) {
-      return {
-        status: "Normal (Aferição Adequada)",
-        description: "Pressão arterial dentro dos limites normais.",
-        color: "text-emerald-800 bg-emerald-100 border-emerald-300",
-      };
-    }
-    if ((systolic >= 130 && systolic <= 139) || (diastolic >= 85 && diastolic <= 89)) {
-      return {
-        status: "Pré-Hipertensão (Atenção)",
-        description: "Faixa de pré-hipertensão. Orientar hábitos saudáveis e redução de sódio.",
-        color: "text-amber-800 bg-amber-50 border-amber-300",
-      };
-    }
-    if ((systolic >= 140 && systolic <= 159) || (diastolic >= 90 && diastolic <= 99)) {
-      return {
-        status: "Hipertensão Estágio 1 (Alerta)",
-        description: "Pressão arterial elevada. Recomenda-se acompanhamento médico e nutricional.",
-        color: "text-orange-900 bg-orange-100 border-orange-300 font-bold",
-      };
-    }
-    if ((systolic >= 160 && systolic <= 179) || (diastolic >= 100 && diastolic <= 109)) {
-      return {
-        status: "Hipertensão Estágio 2 (Risco Alto)",
-        description:
-          "Pressão arterial significativamente elevada. Necessita de consulta médica contínua.",
-        color: "text-rose-900 bg-rose-100 border-rose-300 font-bold",
-      };
-    }
-    return {
-      status: "Hipertensão Estágio 3 / Crise",
-      description:
-        "CRISE HIPERTENSIVA (≥180/110 mmHg). Encaminhar urgentemente ao atendimento médico.",
-      color: "text-white bg-rose-600 border-rose-700 font-extrabold animate-pulse",
+    // Grau por PAS (Sistólica)
+    const getSystolicGrade = (s: number): number => {
+      if (s >= 180) return 5; // Estágio 3 / Crise
+      if (s >= 160) return 4; // Estágio 2
+      if (s >= 140) return 3; // Estágio 1
+      if (s >= 130) return 2; // Pré-hipertensão
+      if (s >= 120) return 1; // Normal
+      return 0; // Ótima
     };
+
+    // Grau por PAD (Diastólica)
+    const getDiastolicGrade = (d: number): number => {
+      if (d >= 110) return 5; // Estágio 3 / Crise
+      if (d >= 100) return 4; // Estágio 2
+      if (d >= 90) return 3; // Estágio 1
+      if (d >= 85) return 2; // Pré-hipertensão
+      if (d >= 80) return 1; // Normal
+      return 0; // Ótima
+    };
+
+    const sysGrade = getSystolicGrade(systolic);
+    const diaGrade = getDiastolicGrade(diastolic);
+    const finalGrade = Math.max(sysGrade, diaGrade);
+
+    switch (finalGrade) {
+      case 5:
+        return {
+          status: "Hipertensão Estágio 3 / Crise (PAS ≥180 ou PAD ≥110 mmHg)",
+          description: "CRISE HIPERTENSIVA. Encaminhar de urgência ao atendimento médico.",
+          color: "text-white bg-rose-600 border-rose-700 font-extrabold animate-pulse",
+        };
+      case 4:
+        return {
+          status: "Hipertensão Estágio 2 (PAS 160-179 ou PAD 100-109 mmHg)",
+          description:
+            "Pressão arterial significativamente elevada. Consulta médica e nutricional contínua.",
+          color: "text-rose-900 bg-rose-100 border-rose-300 font-bold",
+        };
+      case 3:
+        return {
+          status: "Hipertensão Estágio 1 (PAS 140-159 ou PAD 90-99 mmHg)",
+          description:
+            "Pressão arterial elevada. Recomenda-se acompanhamento médico e nutricional.",
+          color: "text-orange-900 bg-orange-100 border-orange-300 font-bold",
+        };
+      case 2:
+        return {
+          status: "Pré-Hipertensão (PAS 130-139 ou PAD 85-89 mmHg)",
+          description:
+            "Faixa de pré-hipertensão. Orientar hábitos saudáveis e readequação nutricional.",
+          color: "text-amber-800 bg-amber-50 border-amber-300",
+        };
+      case 1:
+        return {
+          status: "Normal (PAS 120-129 e PAD 80-84 mmHg)",
+          description: "Pressão arterial em nível adequado segundo as Diretrizes SBC 2025.",
+          color: "text-emerald-800 bg-emerald-100 border-emerald-300",
+        };
+      case 0:
+      default:
+        return {
+          status: "Ótima (PAS < 120 e PAD < 80 mmHg)",
+          description: "Pressão arterial em nível ideal.",
+          color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+        };
+    }
   }
 
-  // Classificação de Glicemia Capilar / de Jejum (Sociedade Brasileira de Diabetes - SBD)
+  // Classificação de Glicemia Capilar (Sociedade Brasileira de Diabetes - SBD 2025)
   function getGlucoseClassification(glucose: number, type: "jejum" | "casual" = "jejum") {
     if (!glucose || glucose <= 0) return null;
 
     if (glucose < 70) {
       return {
         status: "Hipoglicemia (<70 mg/dL)",
-        description: "Glicemia abaixo do limite de segurança. Administrar carboidrato simples.",
+        description:
+          "Glicemia abaixo do limite de segurança. Administrar carboidrato simples imediato.",
         color: "text-white bg-rose-600 border-rose-700 font-extrabold animate-pulse",
       };
     }
@@ -197,42 +223,43 @@ function PatientDetailPage() {
     if (type === "jejum") {
       if (glucose <= 99) {
         return {
-          status: "Normoglicemia (Glicemia Normal)",
-          description: "Glicemia de jejum em nível desejável.",
+          status: "Normoglicemia (Jejum 70-99 mg/dL)",
+          description: "Glicemia de jejum em nível normal e desejável.",
           color: "text-emerald-700 bg-emerald-50 border-emerald-200",
         };
       }
       if (glucose <= 125) {
         return {
-          status: "Glicemia de Jejum Alterada (Pré-Diabetes)",
-          description: "Atenção: Indicativo de pré-diabetes (100-125 mg/dL). Readequar dieta.",
+          status: "Glicemia de Jejum Alterada (Pré-Diabetes: 100-125 mg/dL)",
+          description: "Atenção: Indicativo de pré-diabetes segundo as Diretrizes SBD 2025.",
           color: "text-amber-900 bg-amber-100 border-amber-300 font-bold",
         };
       }
       return {
-        status: "Glicemia Elevada (Suspeita de Diabetes)",
-        description: "Alerta: Glicemia de jejum ≥ 126 mg/dL. Recomenda-se avaliação médica.",
+        status: "Glicemia Elevada em Jejum (≥126 mg/dL - Suspeita de Diabetes)",
+        description: "Alerta: Glicemia de jejum ≥ 126 mg/dL. Recomenda-se investigação médica.",
         color: "text-rose-900 bg-rose-100 border-rose-300 font-bold",
       };
     } else {
       if (glucose <= 139) {
         return {
-          status: "Normoglicemia (Pós-Prandial Normal)",
+          status: "Normoglicemia Casual (<140 mg/dL)",
           description: "Glicemia casual/pós-prandial dentro dos limites normais.",
           color: "text-emerald-700 bg-emerald-50 border-emerald-200",
         };
       }
       if (glucose <= 199) {
         return {
-          status: "Tolerância à Glicose Diminuída",
-          description: "Atenção: Glicemia casual entre 140 e 199 mg/dL.",
+          status: "Glicemia Casual Alterada (140-199 mg/dL)",
+          description:
+            "Atenção: Glicemia casual elevada. Recomenda-se monitoramento e teste confirmatório.",
           color: "text-amber-900 bg-amber-100 border-amber-300 font-bold",
         };
       }
       return {
-        status: "Hiperglicemia (≥ 200 mg/dL)",
+        status: "Hiperglicemia Casual (≥ 200 mg/dL - Suspeita de Diabetes)",
         description:
-          "Alerta: Glicemia casual ≥ 200 mg/dL. Necessita controle nutricional e médico.",
+          "Alerta: Glicemia casual ≥ 200 mg/dL com sintomas. Necessita controle clínico urgente.",
         color: "text-rose-900 bg-rose-100 border-rose-300 font-bold",
       };
     }
@@ -294,7 +321,7 @@ function PatientDetailPage() {
   const numGlucose = Number(glucoseValue) || 0;
   const glucoseDiag = getGlucoseClassification(numGlucose, glucoseType);
 
-  const handleSaveEvaluation = () => {
+  const handleSaveEvaluation = async () => {
     const newEval = {
       date: format(new Date(), "dd/MM/yyyy"),
       label: `Triagem & Retorno ${evaluationsHistory.length + 1}`,
@@ -311,7 +338,32 @@ function PatientDetailPage() {
       bodyFat: `${bodyFat}%`,
     };
     setEvaluationsHistory([newEval, ...evaluationsHistory]);
-    toast.success("Triagem de Sinais Vitais e Medidas salvas no prontuário!");
+    try {
+      await updatePatientClinicalData({
+        data: {
+          patient_id: id,
+          weight,
+          height,
+          waist,
+          hip,
+          abdomen,
+          chest,
+          rightArm,
+          leftArm,
+          rightThigh,
+          leftThigh,
+          bodyFat,
+          systolicBP,
+          diastolicBP,
+          glucoseValue,
+          glucoseType,
+        },
+      });
+      toast.success("Triagem de Sinais Vitais e Medidas salvas e registradas no prontuário!");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro de conexão";
+      toast.error(`Medidas salvas em sessão. Erro ao sincronizar com banco: ${msg}`);
+    }
   };
 
   // 2. Estados de Anamnese Clínica & Nutricional
@@ -544,7 +596,7 @@ function PatientDetailPage() {
     },
   ]);
 
-  const handleSaveNotes = (e: React.FormEvent) => {
+  const handleSaveNotes = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clinicalNotes.trim()) return;
     const newNote = {
@@ -553,8 +605,21 @@ function PatientDetailPage() {
       content: clinicalNotes,
       author: "Nutricionista Resp. Sesc",
     };
-    setNotesHistory([newNote, ...notesHistory]);
-    toast.success("Anotação de evolução clínica salva no prontuário!");
+    const updatedHistory = [newNote, ...notesHistory];
+    setNotesHistory(updatedHistory);
+    try {
+      await updatePatientClinicalData({
+        data: {
+          patient_id: id,
+          clinicalNotes: JSON.stringify(updatedHistory),
+        },
+      });
+      toast.success("Anotação de evolução clínica salva e registrada no prontuário!");
+      setClinicalNotes("");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao salvar anotação";
+      toast.error(`Anotação salva localmente. Erro ao persistir no banco: ${msg}`);
+    }
   };
 
   // 6. Estados do Plano Alimentar / Refeições
@@ -591,8 +656,9 @@ function PatientDetailPage() {
       setQuantity("100");
       setOpenMealDialog(false);
       refetchMeals();
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao registrar refeição");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao registrar refeição";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -604,8 +670,9 @@ function PatientDetailPage() {
       await deleteMeal({ data: mealId });
       toast.success("Refeição removida");
       refetchMeals();
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao remover refeição");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao remover refeição";
+      toast.error(msg);
     }
   };
 
@@ -615,19 +682,27 @@ function PatientDetailPage() {
       await deletePatient({ data: id });
       toast.success("Prontuário excluído com sucesso!");
       navigate({ to: "/app/patients" });
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao excluir paciente");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao excluir paciente";
+      toast.error(msg);
     }
   };
 
   const totals = meals?.reduce(
     (acc, meal) => {
-      meal.items?.forEach((item: any) => {
-        acc.kcal += item.calculated_calories;
-        acc.protein += item.calculated_protein;
-        acc.carbs += item.calculated_carbs;
-        acc.fat += item.calculated_fat;
-      });
+      meal.items?.forEach(
+        (item: {
+          calculated_calories?: number;
+          calculated_protein?: number;
+          calculated_carbs?: number;
+          calculated_fat?: number;
+        }) => {
+          acc.kcal += item.calculated_calories;
+          acc.protein += item.calculated_protein;
+          acc.carbs += item.calculated_carbs;
+          acc.fat += item.calculated_fat;
+        },
+      );
       return acc;
     },
     { kcal: 0, protein: 0, carbs: 0, fat: 0 },
@@ -993,7 +1068,10 @@ function PatientDetailPage() {
                         <div key={m.id} className="text-xs border-b border-slate-100 pb-1">
                           <span className="font-bold text-[#003366]">{m.name}:</span>{" "}
                           {m.items
-                            ?.map((it: any) => `${it.food?.name} (${it.quantity_grams}g)`)
+                            ?.map(
+                              (it: { food?: { name?: string }; quantity_grams?: number }) =>
+                                `${it.food?.name} (${it.quantity_grams}g)`,
+                            )
                             .join(", ") || "Sem itens registrados"}
                         </div>
                       ))}
@@ -1409,7 +1487,10 @@ function PatientDetailPage() {
                     <Label htmlFor="glucoseType" className="text-xs font-bold text-slate-700">
                       Condição da Coleta
                     </Label>
-                    <Select value={glucoseType} onValueChange={(val: any) => setGlucoseType(val)}>
+                    <Select
+                      value={glucoseType}
+                      onValueChange={(val: "jejum" | "casual") => setGlucoseType(val)}
+                    >
                       <SelectTrigger id="glucoseType" className="bg-white border-slate-200">
                         <SelectValue />
                       </SelectTrigger>
@@ -1482,34 +1563,49 @@ function PatientDetailPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {evaluationsHistory.map((item: any, idx: number) => (
-                    <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-4 py-3 font-bold text-[#003366]">{item.date}</td>
-                      <td className="px-4 py-3 font-semibold">{item.label}</td>
-                      <td className="px-4 py-3">
-                        <strong className="text-slate-900">{item.weight}</strong>
-                        <span className="text-[11px] text-slate-500 block">IMC: {item.imc}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="font-extrabold text-[#003366]">
-                          {item.pa || "120/80 mmHg"}
-                        </span>
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded block w-fit mt-0.5">
-                          {item.paStatus || "Normal"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="font-extrabold text-[#003366]">
-                          {item.glicemia || "92 mg/dL"}
-                        </span>
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded block w-fit mt-0.5">
-                          {item.glicemiaStatus || "Normoglicemia"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">{item.waist}</td>
-                      <td className="px-4 py-3 font-semibold text-slate-800">{item.rcq}</td>
-                    </tr>
-                  ))}
+                  {evaluationsHistory.map(
+                    (
+                      item: {
+                        date: string;
+                        label: string;
+                        weight: string;
+                        height: string;
+                        imc: string;
+                        pa: string;
+                        paStatus: string;
+                        glicemia: string;
+                        glicemiaStatus: string;
+                      },
+                      idx: number,
+                    ) => (
+                      <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="px-4 py-3 font-bold text-[#003366]">{item.date}</td>
+                        <td className="px-4 py-3 font-semibold">{item.label}</td>
+                        <td className="px-4 py-3">
+                          <strong className="text-slate-900">{item.weight}</strong>
+                          <span className="text-[11px] text-slate-500 block">IMC: {item.imc}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="font-extrabold text-[#003366]">
+                            {item.pa || "120/80 mmHg"}
+                          </span>
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded block w-fit mt-0.5">
+                            {item.paStatus || "Normal"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="font-extrabold text-[#003366]">
+                            {item.glicemia || "92 mg/dL"}
+                          </span>
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded block w-fit mt-0.5">
+                            {item.glicemiaStatus || "Normoglicemia"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">{item.waist}</td>
+                        <td className="px-4 py-3 font-semibold text-slate-800">{item.rcq}</td>
+                      </tr>
+                    ),
+                  )}
                 </tbody>
               </table>
             </CardContent>
@@ -1923,7 +2019,8 @@ function PatientDetailPage() {
               meals.map((mealItem) => {
                 const mealKcal =
                   mealItem.items?.reduce(
-                    (sum: number, it: any) => sum + (it.calculated_calories || 0),
+                    (sum: number, it: { calculated_calories?: number }) =>
+                      sum + (it.calculated_calories || 0),
                     0,
                   ) || 0;
 
@@ -1960,25 +2057,35 @@ function PatientDetailPage() {
                     <CardContent className="p-4">
                       {mealItem.items && mealItem.items.length > 0 ? (
                         <div className="divide-y divide-slate-100">
-                          {mealItem.items.map((item: any) => (
-                            <div
-                              key={item.id}
-                              className="flex items-center justify-between py-2 text-xs"
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="h-1.5 w-1.5 rounded-full bg-[#003366]" />
-                                <span className="font-semibold text-slate-800">
-                                  {item.food?.name}
-                                </span>
-                                <span className="text-[11px] font-medium text-slate-400">
-                                  ({item.quantity_grams}g)
+                          {mealItem.items.map(
+                            (item: {
+                              id: string;
+                              food?: { name?: string };
+                              quantity_grams?: number;
+                              calculated_calories?: number;
+                              calculated_protein?: number;
+                              calculated_carbs?: number;
+                              calculated_fat?: number;
+                            }) => (
+                              <div
+                                key={item.id}
+                                className="flex items-center justify-between py-2 text-xs"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-[#003366]" />
+                                  <span className="font-semibold text-slate-800">
+                                    {item.food?.name}
+                                  </span>
+                                  <span className="text-[11px] font-medium text-slate-400">
+                                    ({item.quantity_grams}g)
+                                  </span>
+                                </div>
+                                <span className="font-extrabold text-[#003366] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                                  {Math.round(item.calculated_calories)} kcal
                                 </span>
                               </div>
-                              <span className="font-extrabold text-[#003366] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                                {Math.round(item.calculated_calories)} kcal
-                              </span>
-                            </div>
-                          ))}
+                            ),
+                          )}
                         </div>
                       ) : (
                         <p className="text-xs text-slate-400 italic">
