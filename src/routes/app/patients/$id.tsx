@@ -588,13 +588,13 @@ function PatientDetailPage() {
 
             const catBadge = isDependente
               ? {
-                  text: "👨‍👩‍👧 Dependente de Comerciário",
+                  text: "Dependente de Comerciário",
                   color: "bg-emerald-100 text-emerald-900 border-emerald-200",
                 }
               : isComerciario
-                ? { text: "🏢 Comerciário", color: "bg-blue-100 text-[#003366] border-blue-200" }
+                ? { text: "Comerciário", color: "bg-blue-100 text-[#003366] border-blue-200" }
                 : {
-                    text: "🌐 Público Geral",
+                    text: "Público Geral",
                     color: "bg-slate-100 text-slate-800 border-slate-200",
                   };
 
@@ -1056,7 +1056,7 @@ function PatientDetailPage() {
 
                 {bpDiag && (
                   <p className="text-xs text-slate-600 leading-relaxed italic bg-white p-2.5 rounded-lg border border-slate-200/80">
-                    💡 <strong>Parecer Clínico:</strong> {bpDiag.description}
+                    <strong>Parecer Clínico:</strong> {bpDiag.description}
                   </p>
                 )}
               </div>
@@ -1126,7 +1126,7 @@ function PatientDetailPage() {
 
                 {glucoseDiag && (
                   <p className="text-xs text-slate-600 leading-relaxed italic bg-white p-2.5 rounded-lg border border-slate-200/80">
-                    💡 <strong>Parecer Clínico:</strong> {glucoseDiag.description}
+                    <strong>Parecer Clínico:</strong> {glucoseDiag.description}
                   </p>
                 )}
               </div>

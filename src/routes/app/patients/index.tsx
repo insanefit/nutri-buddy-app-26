@@ -122,8 +122,7 @@ function PatientsPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-[#003366]">Prontuários dos Pacientes</h1>
           <p className="mt-1 text-xs text-slate-600">
-            Cadastre, acompanhe o público-alvo Sesc (Comerciários, Dependentes e Comunidade) e
-            prescrições alimentares
+            Gerencie prontuários clínicos, cadastros de pacientes e prescrições nutricionais
           </p>
         </div>
 
@@ -137,7 +136,7 @@ function PatientsPage() {
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle className="text-lg font-bold text-[#003366]">
-                Cadastrar Novo Paciente (Público-Alvo Sesc)
+                Cadastrar Novo Paciente
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 pt-2">
@@ -187,10 +186,10 @@ function PatientsPage() {
                 </div>
               </div>
 
-              {/* Seleção de Categoria Sesc (Público-Alvo) */}
+              {/* Seleção de Categoria Sesc (Sem Emojis) */}
               <div className="space-y-2 pt-1">
                 <Label className="text-xs font-bold text-slate-700 block">
-                  Categoria do Paciente (Público-Alvo Sesc) <span className="text-rose-600">*</span>
+                  Categoria do Paciente <span className="text-rose-600">*</span>
                 </Label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
@@ -202,9 +201,9 @@ function PatientsPage() {
                         : "border-slate-200 text-slate-600 hover:bg-slate-50"
                     }`}
                   >
-                    <span>🏢 Comerciário</span>
+                    <span>Comerciário</span>
                     <span className="text-[10px] font-normal text-slate-400">
-                      Trabalhador Comércio
+                      Trabalhador do Comércio
                     </span>
                   </button>
 
@@ -217,7 +216,7 @@ function PatientsPage() {
                         : "border-slate-200 text-slate-600 hover:bg-slate-50"
                     }`}
                   >
-                    <span>👨‍👩‍👧 Dependente</span>
+                    <span>Dependente</span>
                     <span className="text-[10px] font-normal text-slate-400">
                       Família do Comerciário
                     </span>
@@ -232,7 +231,7 @@ function PatientsPage() {
                         : "border-slate-200 text-slate-600 hover:bg-slate-50"
                     }`}
                   >
-                    <span>🌐 Público Geral</span>
+                    <span>Público Geral</span>
                     <span className="text-[10px] font-normal text-slate-400">
                       Comunidade em Geral
                     </span>
@@ -240,59 +239,16 @@ function PatientsPage() {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="calorieGoal" className="text-xs font-bold text-slate-700">
-                  Meta Calórica Diária (kcal)
-                </Label>
-                <Input
-                  id="calorieGoal"
-                  type="number"
-                  value={calorieGoal}
-                  onChange={(e) => setCalorieGoal(e.target.value)}
-                  placeholder="2000"
-                  required
-                  className="bg-white border-slate-200"
-                />
-              </div>
-
               <Button
                 type="submit"
                 className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold py-2.5 rounded-xl shadow-xs"
                 disabled={loading}
               >
-                {loading ? "Salvando..." : "Salvar Prontuário no Sesc"}
+                {loading ? "Salvando..." : "Salvar Prontuário"}
               </Button>
             </form>
           </DialogContent>
         </Dialog>
-      </div>
-
-      {/* Resumo Institucional do Público Alvo Sesc */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs">
-        <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-          <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">
-            Total Cadastrados
-          </span>
-          <span className="text-lg font-black text-[#003366]">{totalCount} Pacientes</span>
-        </div>
-        <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-100">
-          <span className="text-[10px] font-extrabold text-[#003366] uppercase tracking-wider block">
-            🏢 Comerciários
-          </span>
-          <span className="text-lg font-black text-[#003366]">{comerciariosCount}</span>
-        </div>
-        <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-100">
-          <span className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider block">
-            👨‍👩‍👧 Dependentes
-          </span>
-          <span className="text-lg font-black text-emerald-800">{dependentesCount}</span>
-        </div>
-        <div className="p-3 rounded-xl bg-slate-100/70 border border-slate-200">
-          <span className="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider block">
-            🌐 Público Geral
-          </span>
-          <span className="text-lg font-black text-slate-800">{publicoGeralCount}</span>
-        </div>
       </div>
 
       {/* Barra de Pesquisa de Pacientes */}
@@ -363,12 +319,6 @@ function PatientsPage() {
               </CardHeader>
               <CardContent className="pt-4 space-y-4 flex flex-col justify-between flex-1">
                 <div className="text-xs text-slate-600 space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <p className="flex justify-between items-center">
-                    <span className="font-semibold text-slate-500">Meta Calórica:</span>
-                    <strong className="font-bold text-[#003366]">
-                      {patientItem.daily_calorie_goal || 2000} kcal/dia
-                    </strong>
-                  </p>
                   <p className="flex justify-between items-center text-[11px]">
                     <span className="text-slate-400">Data de Cadastro:</span>
                     <span className="font-medium text-slate-600">
