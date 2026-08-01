@@ -87,8 +87,8 @@ function PatientDetailPage() {
   const today = format(new Date(), "yyyy-MM-dd");
 
   const [activeTab, setActiveTab] = useState<
-    "anthropometry" | "anamnesis" | "diet" | "recipes" | "exams" | "notes"
-  >("anthropometry");
+    "anamnesis" | "anthropometry" | "diet" | "recipes" | "exams" | "notes"
+  >("anamnesis");
 
   const { data: patient } = useQuery({
     queryKey: ["patient", id],
@@ -809,18 +809,6 @@ function PatientDetailPage() {
       {/* Menu de Abas do Prontuário Clínico */}
       <div className="flex border-b border-slate-200 overflow-x-auto no-scrollbar gap-1 pt-1">
         <button
-          onClick={() => setActiveTab("anthropometry")}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold border-b-2 whitespace-nowrap transition-colors ${
-            activeTab === "anthropometry"
-              ? "border-[#003366] text-[#003366] bg-blue-50/50 rounded-t-md"
-              : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          <Ruler className="h-4 w-4" />
-          Medidas Corporais & IMC
-        </button>
-
-        <button
           onClick={() => setActiveTab("anamnesis")}
           className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold border-b-2 whitespace-nowrap transition-colors ${
             activeTab === "anamnesis"
@@ -830,6 +818,18 @@ function PatientDetailPage() {
         >
           <ClipboardList className="h-4 w-4" />
           Anamnese Nutricional
+        </button>
+
+        <button
+          onClick={() => setActiveTab("anthropometry")}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold border-b-2 whitespace-nowrap transition-colors ${
+            activeTab === "anthropometry"
+              ? "border-[#003366] text-[#003366] bg-blue-50/50 rounded-t-md"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <Ruler className="h-4 w-4" />
+          Medidas Corporais & IMC
         </button>
 
         <button
