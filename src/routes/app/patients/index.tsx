@@ -88,6 +88,7 @@ function PatientsPage() {
           phone: phone,
           category: category,
           daily_calorie_goal: Number(calorieGoal) || 2000,
+          lgpd_consent: lgpdConsent,
         },
       });
       toast.success("Paciente cadastrado no prontuário Sesc!");
@@ -96,6 +97,7 @@ function PatientsPage() {
       setPhone("");
       setCategory("comerciario");
       setCalorieGoal("2000");
+      setLgpdConsent(false);
       setOpen(false);
       refetch();
     } catch (err: unknown) {

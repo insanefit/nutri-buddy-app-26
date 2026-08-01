@@ -1,6 +1,6 @@
 import { createFileRoute, useParams, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -141,22 +141,20 @@ function PatientDetailPage() {
 
     // Grau por PAS (Sistólica)
     const getSystolicGrade = (s: number): number => {
-      if (s >= 180) return 5; // Estágio 3 / Crise
-      if (s >= 160) return 4; // Estágio 2
-      if (s >= 140) return 3; // Estágio 1
-      if (s >= 130) return 2; // Pré-hipertensão
-      if (s >= 120) return 1; // Normal
-      return 0; // Ótima
+      if (s >= 180) return 4; // Estágio 3 / Crise
+      if (s >= 160) return 3; // Estágio 2
+      if (s >= 140) return 2; // Estágio 1
+      if (s >= 120) return 1; // Pré-hipertensão (PAS 120-139)
+      return 0; // Ótima/Normal (PAS < 120)
     };
 
     // Grau por PAD (Diastólica)
     const getDiastolicGrade = (d: number): number => {
-      if (d >= 110) return 5; // Estágio 3 / Crise
-      if (d >= 100) return 4; // Estágio 2
-      if (d >= 90) return 3; // Estágio 1
-      if (d >= 85) return 2; // Pré-hipertensão
-      if (d >= 80) return 1; // Normal
-      return 0; // Ótima
+      if (d >= 110) return 4; // Estágio 3 / Crise
+      if (d >= 100) return 3; // Estágio 2
+      if (d >= 90) return 2; // Estágio 1
+      if (d >= 80) return 1; // Pré-hipertensão (PAD 80-89)
+      return 0; // Ótima/Normal (PAD < 80)
     };
 
     const sysGrade = getSystolicGrade(systolic);
@@ -164,45 +162,39 @@ function PatientDetailPage() {
     const finalGrade = Math.max(sysGrade, diaGrade);
 
     switch (finalGrade) {
-      case 5:
+      case 4:
         return {
           status: "Hipertensão Estágio 3 / Crise (PAS ≥180 ou PAD ≥110 mmHg)",
           description: "CRISE HIPERTENSIVA. Encaminhar de urgência ao atendimento médico.",
           color: "text-white bg-rose-600 border-rose-700 font-extrabold animate-pulse",
         };
-      case 4:
+      case 3:
         return {
           status: "Hipertensão Estágio 2 (PAS 160-179 ou PAD 100-109 mmHg)",
           description:
             "Pressão arterial significativamente elevada. Consulta médica e nutricional contínua.",
           color: "text-rose-900 bg-rose-100 border-rose-300 font-bold",
         };
-      case 3:
+      case 2:
         return {
           status: "Hipertensão Estágio 1 (PAS 140-159 ou PAD 90-99 mmHg)",
           description:
             "Pressão arterial elevada. Recomenda-se acompanhamento médico e nutricional.",
           color: "text-orange-900 bg-orange-100 border-orange-300 font-bold",
         };
-      case 2:
-        return {
-          status: "Pré-Hipertensão (PAS 130-139 ou PAD 85-89 mmHg)",
-          description:
-            "Faixa de pré-hipertensão. Orientar hábitos saudáveis e readequação nutricional.",
-          color: "text-amber-800 bg-amber-50 border-amber-300",
-        };
       case 1:
         return {
-          status: "Normal (PAS 120-129 e PAD 80-84 mmHg)",
-          description: "Pressão arterial em nível adequado segundo as Diretrizes SBC 2025.",
-          color: "text-emerald-800 bg-emerald-100 border-emerald-300",
+          status: "Pré-Hipertensão (PAS 120-139 ou PAD 80-89 mmHg)",
+          description:
+            "Faixa de pré-hipertensão conforme a DBHA/SBC 2025. Orientar hábitos saudáveis e readequação nutricional.",
+          color: "text-amber-800 bg-amber-50 border-amber-300 font-semibold",
         };
       case 0:
       default:
         return {
-          status: "Ótima (PAS < 120 e PAD < 80 mmHg)",
+          status: "Ótima / Normal (PAS < 120 e PAD < 80 mmHg)",
           description: "Pressão arterial em nível ideal.",
-          color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+          color: "text-emerald-700 bg-emerald-50 border-emerald-200 font-semibold",
         };
     }
   }
@@ -283,6 +275,47 @@ function PatientDetailPage() {
   const [diastolicBP, setDiastolicBP] = useState("80"); // PAD (mmHg)
   const [glucoseValue, setGlucoseValue] = useState("92"); // Glicemia (mg/dL)
   const [glucoseType, setGlucoseType] = useState<"jejum" | "casual">("jejum");
+
+  // Restaurar e hidratar os dados reais salvos no banco Supabase ao carregar
+  useEffect(() => {
+    if (!patient?.notes) return;
+    try {
+      if (patient.notes.startsWith("{")) {
+        const obj = JSON.parse(patient.notes);
+        if (obj.weight) setWeight(obj.weight);
+        if (obj.height) setHeight(obj.height);
+        if (obj.waist) setWaist(obj.waist);
+        if (obj.hip) setHip(obj.hip);
+        if (obj.abdomen) setAbdomen(obj.abdomen);
+        if (obj.chest) setChest(obj.chest);
+        if (obj.rightArm) setRightArm(obj.rightArm);
+        if (obj.leftArm) setLeftArm(obj.leftArm);
+        if (obj.rightThigh) setRightThigh(obj.rightThigh);
+        if (obj.leftThigh) setLeftThigh(obj.leftThigh);
+        if (obj.bodyFat) setBodyFat(obj.bodyFat);
+        if (obj.systolicBP) setSystolicBP(obj.systolicBP);
+        if (obj.diastolicBP) setDiastolicBP(obj.diastolicBP);
+        if (obj.glucoseValue) setGlucoseValue(obj.glucoseValue);
+        if (obj.glucoseType) setGlucoseType(obj.glucoseType);
+        if (obj.clinicalNotes && typeof obj.clinicalNotes === "string") {
+          try {
+            if (obj.clinicalNotes.startsWith("[")) {
+              setNotesHistory(JSON.parse(obj.clinicalNotes));
+            } else {
+              setClinicalNotes(obj.clinicalNotes);
+            }
+          } catch {
+            setClinicalNotes(obj.clinicalNotes);
+          }
+        }
+        if (obj.anamnesis && Array.isArray(obj.anamnesis)) {
+          setCustomAnamnesisQuestions(obj.anamnesis);
+        }
+      }
+    } catch (err) {
+      console.error("[Hydration Error]", err);
+    }
+  }, [patient]);
 
   const [evaluationsHistory, setEvaluationsHistory] = useState([
     {
@@ -413,7 +446,7 @@ function PatientDetailPage() {
   const [newQuestionTitle, setNewQuestionTitle] = useState("");
   const [newQuestionAnswer, setNewQuestionAnswer] = useState("");
 
-  const handleAddQuestion = (e: React.FormEvent) => {
+  const handleAddQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newQuestionTitle.trim()) {
       toast.error("Informe o título da pergunta.");
@@ -424,11 +457,23 @@ function PatientDetailPage() {
       question: newQuestionTitle.trim(),
       answer: newQuestionAnswer.trim(),
     };
-    setCustomAnamnesisQuestions([...customAnamnesisQuestions, newQ]);
+    const updatedList = [...customAnamnesisQuestions, newQ];
+    setCustomAnamnesisQuestions(updatedList);
     setNewQuestionTitle("");
     setNewQuestionAnswer("");
     setOpenNewQuestionDialog(false);
-    toast.success("Nova pergunta adicionada à Anamnese!");
+    try {
+      await updatePatientClinicalData({
+        data: {
+          patient_id: id,
+          anamnesis: updatedList,
+        },
+      });
+      toast.success("Nova pergunta salva na Anamnese do banco!");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao salvar pergunta";
+      toast.error(`Pergunta adicionada localmente. Erro no banco: ${msg}`);
+    }
   };
 
   const handleUpdateQuestionTitle = (id: string, newTitle: string) => {
@@ -697,10 +742,10 @@ function PatientDetailPage() {
           calculated_carbs?: number;
           calculated_fat?: number;
         }) => {
-          acc.kcal += item.calculated_calories;
-          acc.protein += item.calculated_protein;
-          acc.carbs += item.calculated_carbs;
-          acc.fat += item.calculated_fat;
+          acc.kcal += item.calculated_calories || 0;
+          acc.protein += item.calculated_protein || 0;
+          acc.carbs += item.calculated_carbs || 0;
+          acc.fat += item.calculated_fat || 0;
         },
       );
       return acc;
@@ -1575,6 +1620,9 @@ function PatientDetailPage() {
                         paStatus: string;
                         glicemia: string;
                         glicemiaStatus: string;
+                        waist?: string;
+                        rcq?: string;
+                        bodyFat?: string;
                       },
                       idx: number,
                     ) => (
@@ -2081,7 +2129,7 @@ function PatientDetailPage() {
                                   </span>
                                 </div>
                                 <span className="font-extrabold text-[#003366] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                                  {Math.round(item.calculated_calories)} kcal
+                                  {Math.round(item.calculated_calories || 0)} kcal
                                 </span>
                               </div>
                             ),
@@ -2464,7 +2512,7 @@ function PatientDetailPage() {
   );
 }
 
-function MacroCard({ label, value }: { label: string; value: string }) {
+function MacroCard({ label, value }: { label: string; value: string; color?: string }) {
   return (
     <Card className="border border-slate-200 bg-white">
       <CardContent className="p-4">
