@@ -131,7 +131,111 @@ function PatientDetailPage() {
       : null) ||
     "Paciente Sesc";
 
-  // 1. Estados de Medidas Corporais
+  // Classificação de Pressão Arterial (Diretriz Brasileira de Hipertensão - SBC)
+  function getBloodPressureClassification(systolic: number, diastolic: number) {
+    if (!systolic || !diastolic || systolic <= 0 || diastolic <= 0) return null;
+
+    if (systolic < 120 && diastolic < 80) {
+      return {
+        status: "Ótima (Pressão Ótima)",
+        description: "Pressão arterial em nível ideal.",
+        color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+      };
+    }
+    if (systolic <= 129 && diastolic <= 84) {
+      return {
+        status: "Normal (Aferição Adequada)",
+        description: "Pressão arterial dentro dos limites normais.",
+        color: "text-emerald-800 bg-emerald-100 border-emerald-300",
+      };
+    }
+    if ((systolic >= 130 && systolic <= 139) || (diastolic >= 85 && diastolic <= 89)) {
+      return {
+        status: "Pré-Hipertensão (Atenção)",
+        description: "Faixa de pré-hipertensão. Orientar hábitos saudáveis e redução de sódio.",
+        color: "text-amber-800 bg-amber-50 border-amber-300",
+      };
+    }
+    if ((systolic >= 140 && systolic <= 159) || (diastolic >= 90 && diastolic <= 99)) {
+      return {
+        status: "Hipertensão Estágio 1 (Alerta)",
+        description: "Pressão arterial elevada. Recomenda-se acompanhamento médico e nutricional.",
+        color: "text-orange-900 bg-orange-100 border-orange-300 font-bold",
+      };
+    }
+    if ((systolic >= 160 && systolic <= 179) || (diastolic >= 100 && diastolic <= 109)) {
+      return {
+        status: "Hipertensão Estágio 2 (Risco Alto)",
+        description:
+          "Pressão arterial significativamente elevada. Necessita de consulta médica contínua.",
+        color: "text-rose-900 bg-rose-100 border-rose-300 font-bold",
+      };
+    }
+    return {
+      status: "Hipertensão Estágio 3 / Crise",
+      description:
+        "CRISE HIPERTENSIVA (≥180/110 mmHg). Encaminhar urgentemente ao atendimento médico.",
+      color: "text-white bg-rose-600 border-rose-700 font-extrabold animate-pulse",
+    };
+  }
+
+  // Classificação de Glicemia Capilar / de Jejum (Sociedade Brasileira de Diabetes - SBD)
+  function getGlucoseClassification(glucose: number, type: "jejum" | "casual" = "jejum") {
+    if (!glucose || glucose <= 0) return null;
+
+    if (glucose < 70) {
+      return {
+        status: "Hipoglicemia (<70 mg/dL)",
+        description: "Glicemia abaixo do limite de segurança. Administrar carboidrato simples.",
+        color: "text-white bg-rose-600 border-rose-700 font-extrabold animate-pulse",
+      };
+    }
+
+    if (type === "jejum") {
+      if (glucose <= 99) {
+        return {
+          status: "Normoglicemia (Glicemia Normal)",
+          description: "Glicemia de jejum em nível desejável.",
+          color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+        };
+      }
+      if (glucose <= 125) {
+        return {
+          status: "Glicemia de Jejum Alterada (Pré-Diabetes)",
+          description: "Atenção: Indicativo de pré-diabetes (100-125 mg/dL). Readequar dieta.",
+          color: "text-amber-900 bg-amber-100 border-amber-300 font-bold",
+        };
+      }
+      return {
+        status: "Glicemia Elevada (Suspeita de Diabetes)",
+        description: "Alerta: Glicemia de jejum ≥ 126 mg/dL. Recomenda-se avaliação médica.",
+        color: "text-rose-900 bg-rose-100 border-rose-300 font-bold",
+      };
+    } else {
+      if (glucose <= 139) {
+        return {
+          status: "Normoglicemia (Pós-Prandial Normal)",
+          description: "Glicemia casual/pós-prandial dentro dos limites normais.",
+          color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+        };
+      }
+      if (glucose <= 199) {
+        return {
+          status: "Tolerância à Glicose Diminuída",
+          description: "Atenção: Glicemia casual entre 140 e 199 mg/dL.",
+          color: "text-amber-900 bg-amber-100 border-amber-300 font-bold",
+        };
+      }
+      return {
+        status: "Hiperglicemia (≥ 200 mg/dL)",
+        description:
+          "Alerta: Glicemia casual ≥ 200 mg/dL. Necessita controle nutricional e médico.",
+        color: "text-rose-900 bg-rose-100 border-rose-300 font-bold",
+      };
+    }
+  }
+
+  // 1. Estados de Medidas Corporais & Triagem de Sinais Vitais
   const [weight, setWeight] = useState("78.5");
   const [height, setHeight] = useState("175");
   const [waist, setWaist] = useState("84");
@@ -144,15 +248,25 @@ function PatientDetailPage() {
   const [leftThigh, setLeftThigh] = useState("56");
   const [bodyFat, setBodyFat] = useState("21.5");
 
+  // Estados de Sinais Vitais (Pressão Arterial e Glicemia)
+  const [systolicBP, setSystolicBP] = useState("120"); // PAS (mmHg)
+  const [diastolicBP, setDiastolicBP] = useState("80"); // PAD (mmHg)
+  const [glucoseValue, setGlucoseValue] = useState("92"); // Glicemia (mg/dL)
+  const [glucoseType, setGlucoseType] = useState<"jejum" | "casual">("jejum");
+
   const [evaluationsHistory, setEvaluationsHistory] = useState([
     {
       date: "15/05/2026",
-      label: "Avaliação Inicial Sesc",
-      weight: "81.0",
-      height: "175",
+      label: "Triagem & Avaliação Inicial Sesc",
+      weight: "81.0 kg",
+      height: "175 cm",
       imc: "26.4",
-      waist: "88",
-      hip: "100",
+      pa: "128/82 mmHg",
+      paStatus: "Normal",
+      glicemia: "95 mg/dL",
+      glicemiaStatus: "Normoglicemia",
+      waist: "88 cm",
+      hip: "100 cm",
       rcq: "0.88",
       bodyFat: "24.0%",
     },
@@ -170,20 +284,31 @@ function PatientDetailPage() {
   const numHip = Number(hip) || 0;
   const rcqValue = numWaist > 0 && numHip > 0 ? Number((numWaist / numHip).toFixed(2)) : 0;
 
+  const numSystolic = Number(systolicBP) || 0;
+  const numDiastolic = Number(diastolicBP) || 0;
+  const bpDiag = getBloodPressureClassification(numSystolic, numDiastolic);
+
+  const numGlucose = Number(glucoseValue) || 0;
+  const glucoseDiag = getGlucoseClassification(numGlucose, glucoseType);
+
   const handleSaveEvaluation = () => {
     const newEval = {
       date: format(new Date(), "dd/MM/yyyy"),
-      label: `Retorno — Consulta ${evaluationsHistory.length + 1}`,
+      label: `Triagem & Retorno ${evaluationsHistory.length + 1}`,
       weight: `${weight} kg`,
       height: `${height} cm`,
       imc: `${imcValue}`,
+      pa: `${systolicBP}/${diastolicBP} mmHg`,
+      paStatus: bpDiag?.status || "Normal",
+      glicemia: `${glucoseValue} mg/dL (${glucoseType === "jejum" ? "Jejum" : "Casual"})`,
+      glicemiaStatus: glucoseDiag?.status || "Normoglicemia",
       waist: `${waist} cm`,
       hip: `${hip} cm`,
       rcq: `${rcqValue}`,
       bodyFat: `${bodyFat}%`,
     };
     setEvaluationsHistory([newEval, ...evaluationsHistory]);
-    toast.success("Medidas corporais salvas no histórico do prontuário!");
+    toast.success("Triagem de Sinais Vitais e Medidas salvas no prontuário!");
   };
 
   // 2. Estados de Anamnese Clínica & Nutricional
@@ -505,8 +630,8 @@ function PatientDetailPage() {
                     <span className="text-slate-900">{format(new Date(), "dd/MM/yyyy")}</span>
                   </div>
                   <div>
-                    <span className="font-bold text-slate-600 block">PESO / ALTURA:</span>
-                    <span className="text-slate-900">
+                    <span className="font-bold text-slate-600 block">PESO / ALTURA / IMC:</span>
+                    <span className="text-slate-900 font-medium">
                       {weight} kg | {height} cm (IMC: {imcValue} - {imcClass?.text})
                     </span>
                   </div>
@@ -514,6 +639,18 @@ function PatientDetailPage() {
                     <span className="font-bold text-slate-600 block">META CALÓRICA:</span>
                     <span className="text-slate-900 font-semibold">
                       {patient?.daily_calorie_goal || 2000} kcal/dia
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-600 block">PRESSÃO ARTERIAL (PA):</span>
+                    <span className="text-[#003366] font-bold">
+                      {systolicBP}/{diastolicBP} mmHg ({bpDiag?.status || "Normal"})
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-600 block">GLICEMIA CAPILAR:</span>
+                    <span className="text-[#003366] font-bold">
+                      {glucoseValue} mg/dL ({glucoseDiag?.status || "Normoglicemia"})
                     </span>
                   </div>
                 </div>
@@ -768,9 +905,9 @@ function PatientDetailPage() {
 
               {/* Indicadores Calculados (IMC e RCQ) */}
               <div className="grid gap-4 sm:grid-cols-2 pt-2">
-                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-semibold text-slate-500 block uppercase">
+                    <span className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">
                       Índice de Massa Corporal (IMC)
                     </span>
                     <span className="text-2xl font-black text-[#003366]">{imcValue} kg/m²</span>
@@ -782,9 +919,9 @@ function PatientDetailPage() {
                   )}
                 </div>
 
-                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-semibold text-slate-500 block uppercase">
+                    <span className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">
                       Relação Cintura / Quadril (RCQ)
                     </span>
                     <span className="text-2xl font-black text-[#003366]">{rcqValue}</span>
@@ -792,58 +929,232 @@ function PatientDetailPage() {
                   <span
                     className={`text-xs font-bold px-3 py-1 rounded-full ${
                       rcqValue > 0.85
-                        ? "text-amber-700 bg-amber-100"
-                        : "text-emerald-700 bg-emerald-50"
+                        ? "text-amber-700 bg-amber-100 border border-amber-200"
+                        : "text-emerald-700 bg-emerald-50 border border-emerald-200"
                     }`}
                   >
                     {rcqValue > 0.85 ? "Risco Cardiovascular Elevado" : "Risco Baixo / Adequado"}
                   </span>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* MÓDULO DE TRIAGEM DE SINAIS VITAIS (PRESSÃO ARTERIAL E GLICEMIA CAPILAR) */}
+          <Card className="border border-slate-200/90 shadow-xs bg-white rounded-2xl overflow-hidden">
+            <CardHeader className="pb-3 border-b border-slate-100 bg-slate-50/60 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-extrabold text-[#003366] flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-[#003366]" />
+                  Triagem de Sinais Vitais (Pressão Arterial & Glicemia)
+                </CardTitle>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Classificação automática baseada nas diretrizes da SBC (Hipertensão) e SBD
+                  (Diabetes)
+                </p>
+              </div>
+              <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-blue-100 text-[#003366] border border-blue-200">
+                Classificação em Tempo Real
+              </span>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              {/* Bloco 1: Aferição de Pressão Arterial */}
+              <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                  <h4 className="text-xs font-extrabold text-[#003366] uppercase tracking-wider flex items-center gap-1.5">
+                    <Activity className="h-4 w-4 text-rose-600" />
+                    Pressão Arterial (PA)
+                  </h4>
+                  <span className="text-[11px] font-semibold text-slate-500">Unidade: mmHg</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="systolicBP" className="text-xs font-bold text-slate-700">
+                      Sistólica (PAS)
+                    </Label>
+                    <Input
+                      id="systolicBP"
+                      type="number"
+                      placeholder="120"
+                      value={systolicBP}
+                      onChange={(e) => setSystolicBP(e.target.value)}
+                      className="bg-white border-slate-200 font-extrabold text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="diastolicBP" className="text-xs font-bold text-slate-700">
+                      Diastólica (PAD)
+                    </Label>
+                    <Input
+                      id="diastolicBP"
+                      type="number"
+                      placeholder="80"
+                      value={diastolicBP}
+                      onChange={(e) => setDiastolicBP(e.target.value)}
+                      className="bg-white border-slate-200 font-extrabold text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                      Resultado da Aferição
+                    </span>
+                    {bpDiag ? (
+                      <div className={`p-2.5 rounded-lg border text-xs font-bold ${bpDiag.color}`}>
+                        <div className="flex items-center justify-between">
+                          <span>
+                            {systolicBP}/{diastolicBP} mmHg
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded uppercase font-black">
+                            {bpDiag.status}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-2.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-400 italic">
+                        Informe PAS e PAD para classificar
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {bpDiag && (
+                  <p className="text-xs text-slate-600 leading-relaxed italic bg-white p-2.5 rounded-lg border border-slate-200/80">
+                    💡 <strong>Parecer Clínico:</strong> {bpDiag.description}
+                  </p>
+                )}
+              </div>
+
+              {/* Bloco 2: Aferição de Glicemia Capilar */}
+              <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                  <h4 className="text-xs font-extrabold text-[#003366] uppercase tracking-wider flex items-center gap-1.5">
+                    <FlaskConical className="h-4 w-4 text-amber-600" />
+                    Glicemia Capilar / Teste de Glicose
+                  </h4>
+                  <span className="text-[11px] font-semibold text-slate-500">Unidade: mg/dL</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="glucoseValue" className="text-xs font-bold text-slate-700">
+                      Resultado do Teste (mg/dL)
+                    </Label>
+                    <Input
+                      id="glucoseValue"
+                      type="number"
+                      placeholder="95"
+                      value={glucoseValue}
+                      onChange={(e) => setGlucoseValue(e.target.value)}
+                      className="bg-white border-slate-200 font-extrabold text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="glucoseType" className="text-xs font-bold text-slate-700">
+                      Condição da Coleta
+                    </Label>
+                    <Select value={glucoseType} onValueChange={(val: any) => setGlucoseType(val)}>
+                      <SelectTrigger id="glucoseType" className="bg-white border-slate-200">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="jejum">Jejum (8h a 12h)</SelectItem>
+                        <SelectItem value="casual">Pós-Prandial / Casual</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                      Situação Diagnóstica
+                    </span>
+                    {glucoseDiag ? (
+                      <div
+                        className={`p-2.5 rounded-lg border text-xs font-bold ${glucoseDiag.color}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span>{glucoseValue} mg/dL</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded uppercase font-black">
+                            {glucoseDiag.status}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-2.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-400 italic">
+                        Informe o valor em mg/dL
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {glucoseDiag && (
+                  <p className="text-xs text-slate-600 leading-relaxed italic bg-white p-2.5 rounded-lg border border-slate-200/80">
+                    💡 <strong>Parecer Clínico:</strong> {glucoseDiag.description}
+                  </p>
+                )}
+              </div>
 
               <Button
                 onClick={handleSaveEvaluation}
-                className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold gap-2 shadow-sm"
+                className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold gap-2 shadow-sm rounded-xl py-3"
               >
                 <Save className="h-4 w-4" />
-                Salvar Avaliação Antropométrica no Histórico
+                Salvar Triagem de Sinais Vitais & Medidas no Prontuário
               </Button>
             </CardContent>
           </Card>
 
-          {/* Tabela de Histórico de Avaliações */}
-          <Card className="border border-slate-200 shadow-sm bg-white">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-sm font-bold text-[#003366] flex items-center gap-2">
+          {/* Tabela de Histórico de Avaliações e Triagem */}
+          <Card className="border border-slate-200/90 shadow-xs bg-white rounded-2xl overflow-hidden">
+            <CardHeader className="pb-3 border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-sm font-extrabold text-[#003366] flex items-center gap-2">
                 <History className="h-4 w-4 text-[#003366]" />
-                Histórico & Evolução Físico-Antropométrica
+                Histórico de Triagem & Evolução Antropométrica
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0 overflow-x-auto">
               <table className="w-full text-xs text-left text-slate-700">
-                <thead className="bg-slate-50 text-slate-600 font-bold uppercase border-b border-slate-200">
+                <thead className="bg-slate-50 text-slate-600 font-extrabold uppercase border-b border-slate-200">
                   <tr>
                     <th className="px-4 py-3">Data</th>
                     <th className="px-4 py-3">Descrição</th>
-                    <th className="px-4 py-3">Peso</th>
-                    <th className="px-4 py-3">IMC</th>
+                    <th className="px-4 py-3">Peso / IMC</th>
+                    <th className="px-4 py-3">Pressão Arterial</th>
+                    <th className="px-4 py-3">Glicemia</th>
                     <th className="px-4 py-3">Cintura</th>
-                    <th className="px-4 py-3">Quadril</th>
                     <th className="px-4 py-3">RCQ</th>
-                    <th className="px-4 py-3">% Gordura</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {evaluationsHistory.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-semibold text-[#003366]">{item.date}</td>
-                      <td className="px-4 py-3">{item.label}</td>
-                      <td className="px-4 py-3 font-bold">{item.weight}</td>
-                      <td className="px-4 py-3">{item.imc}</td>
+                  {evaluationsHistory.map((item: any, idx: number) => (
+                    <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="px-4 py-3 font-bold text-[#003366]">{item.date}</td>
+                      <td className="px-4 py-3 font-semibold">{item.label}</td>
+                      <td className="px-4 py-3">
+                        <strong className="text-slate-900">{item.weight}</strong>
+                        <span className="text-[11px] text-slate-500 block">IMC: {item.imc}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="font-extrabold text-[#003366]">
+                          {item.pa || "120/80 mmHg"}
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded block w-fit mt-0.5">
+                          {item.paStatus || "Normal"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="font-extrabold text-[#003366]">
+                          {item.glicemia || "92 mg/dL"}
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded block w-fit mt-0.5">
+                          {item.glicemiaStatus || "Normoglicemia"}
+                        </span>
+                      </td>
                       <td className="px-4 py-3">{item.waist}</td>
-                      <td className="px-4 py-3">{item.hip}</td>
-                      <td className="px-4 py-3 font-medium">{item.rcq}</td>
-                      <td className="px-4 py-3 font-semibold text-emerald-600">{item.bodyFat}</td>
+                      <td className="px-4 py-3 font-semibold text-slate-800">{item.rcq}</td>
                     </tr>
                   ))}
                 </tbody>
