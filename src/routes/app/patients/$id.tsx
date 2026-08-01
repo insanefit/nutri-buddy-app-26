@@ -747,10 +747,13 @@ function PatientDetailPage() {
                   <SescLogo className="h-12" />
                   <div className="text-right">
                     <h3 className="font-extrabold text-[#003366] text-sm uppercase">
-                      SERVIÇO SOCIAL DO COMÉRCIO - SESC
+                      Serviço Social do Comércio – SESC-AR/AP
                     </h3>
-                    <p className="text-[11px] text-slate-500 font-semibold">
-                      Termo de Prestação de Serviços Nutricionais & TCLE
+                    <p className="text-[11px] text-slate-600 font-semibold">
+                      CNPJ: 03.593.251/0001-15
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      Centro de Atividades Araxá | Rua Jovino Dinoá, 4311, Beirol - Macapá/AP
                     </p>
                   </div>
                 </div>
@@ -784,9 +787,9 @@ function PatientDetailPage() {
                   </div>
                   <div>
                     <span className="font-bold text-slate-500 block uppercase tracking-wider text-[10px]">
-                      UNIDADE SESC:
+                      UNIDADE DE ATENDIMENTO:
                     </span>
-                    <span className="text-slate-900 font-bold">Unidade de Saúde & Nutrição</span>
+                    <span className="text-slate-900 font-bold">Sesc Araxá - Saúde & Nutrição</span>
                   </div>
                 </div>
 
@@ -905,9 +908,14 @@ function PatientDetailPage() {
                   <SescLogo className="h-12" />
                   <div className="text-right">
                     <h3 className="font-extrabold text-[#003366] text-sm uppercase">
-                      Saúde Nutricional Sesc
+                      Serviço Social do Comércio – SESC-AR/AP
                     </h3>
-                    <p className="text-[11px] text-slate-500">Unidade de Atendimento Clínico</p>
+                    <p className="text-[11px] text-slate-600 font-semibold">
+                      CNPJ: 03.593.251/0001-15
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      Centro de Atividades Araxá | Rua Jovino Dinoá, 4311, Beirol - Macapá/AP
+                    </p>
                   </div>
                 </div>
 
