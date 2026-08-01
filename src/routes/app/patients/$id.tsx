@@ -338,6 +338,61 @@ function PatientDetailPage() {
     "Reeducação alimentar, controle pressórico e redução de gordura corporal visceral.",
   );
 
+  // Perguntas e Campos Dinâmicos da Anamnese
+  const [customAnamnesisQuestions, setCustomAnamnesisQuestions] = useState<
+    Array<{ id: string; question: string; answer: string }>
+  >([
+    {
+      id: "1",
+      question: "Histórico Familiar de Doenças Crônicas (Hipertensão, Diabetes)",
+      answer: "Pai hipertenso, mãe com histórico de diabetes tipo 2.",
+    },
+    {
+      id: "2",
+      question: "Qualidade e Horas de Sono por Noite",
+      answer: "Relata de 6 a 7 horas de sono contínuo por noite.",
+    },
+  ]);
+
+  const [openNewQuestionDialog, setOpenNewQuestionDialog] = useState(false);
+  const [newQuestionTitle, setNewQuestionTitle] = useState("");
+  const [newQuestionAnswer, setNewQuestionAnswer] = useState("");
+
+  const handleAddQuestion = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newQuestionTitle.trim()) {
+      toast.error("Informe o título da pergunta.");
+      return;
+    }
+    const newQ = {
+      id: Date.now().toString(),
+      question: newQuestionTitle.trim(),
+      answer: newQuestionAnswer.trim(),
+    };
+    setCustomAnamnesisQuestions([...customAnamnesisQuestions, newQ]);
+    setNewQuestionTitle("");
+    setNewQuestionAnswer("");
+    setOpenNewQuestionDialog(false);
+    toast.success("Nova pergunta adicionada à Anamnese!");
+  };
+
+  const handleUpdateQuestionTitle = (id: string, newTitle: string) => {
+    setCustomAnamnesisQuestions(
+      customAnamnesisQuestions.map((q) => (q.id === id ? { ...q, question: newTitle } : q)),
+    );
+  };
+
+  const handleUpdateQuestionAnswer = (id: string, newAnswer: string) => {
+    setCustomAnamnesisQuestions(
+      customAnamnesisQuestions.map((q) => (q.id === id ? { ...q, answer: newAnswer } : q)),
+    );
+  };
+
+  const handleDeleteQuestion = (id: string) => {
+    setCustomAnamnesisQuestions(customAnamnesisQuestions.filter((q) => q.id !== id));
+    toast.success("Pergunta removida da Anamnese.");
+  };
+
   const handleSaveAnamnesis = (e: React.FormEvent) => {
     e.preventDefault();
     toast.success("Anamnese clínica e nutricional salva com sucesso no prontuário Sesc!");
@@ -1201,14 +1256,77 @@ function PatientDetailPage() {
       {/* ---------------- ABA 2: ANAMNESE NUTRICIONAL ---------------- */}
       {activeTab === "anamnesis" && (
         <form onSubmit={handleSaveAnamnesis} className="space-y-6">
-          <Card className="border border-slate-200 shadow-sm bg-white">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-base font-bold text-[#003366] flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-[#003366]" />
-                Anamnese Clínica & Histórico Nutricional Sesc
-              </CardTitle>
+          <Card className="border border-slate-200 shadow-sm bg-white rounded-2xl overflow-hidden">
+            <CardHeader className="pb-3 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-base font-extrabold text-[#003366] flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5 text-[#003366]" />
+                  Anamnese Clínica & Histórico Nutricional
+                </CardTitle>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Preencha as perguntas clínicas padrão ou adicione novas perguntas personalizadas
+                </p>
+              </div>
+
+              {/* Botão Adicionar Nova Pergunta */}
+              <Dialog open={openNewQuestionDialog} onOpenChange={setOpenNewQuestionDialog}>
+                <DialogTrigger asChild>
+                  <Button
+                    type="button"
+                    className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold gap-1.5 rounded-xl shadow-xs shrink-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Adicionar Nova Pergunta
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="text-lg font-bold text-[#003366]">
+                      Adicionar Pergunta à Anamnese
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="qTitle" className="text-xs font-bold text-slate-700">
+                        Título da Pergunta / Campo
+                      </Label>
+                      <Input
+                        id="qTitle"
+                        value={newQuestionTitle}
+                        onChange={(e) => setNewQuestionTitle(e.target.value)}
+                        placeholder="Ex: Frequência de Consumo de Ultraprocessados"
+                        className="bg-white border-slate-200"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="qAnswer" className="text-xs font-bold text-slate-700">
+                        Resposta / Observação Inicial
+                      </Label>
+                      <textarea
+                        id="qAnswer"
+                        rows={3}
+                        value={newQuestionAnswer}
+                        onChange={(e) => setNewQuestionAnswer(e.target.value)}
+                        placeholder="Digite a resposta do paciente..."
+                        className="w-full rounded-md border border-slate-200 p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#003366]"
+                      />
+                    </div>
+
+                    <Button
+                      type="button"
+                      onClick={handleAddQuestion}
+                      className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold py-2.5 rounded-xl"
+                    >
+                      Inserir Pergunta na Anamnese
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </CardHeader>
-            <CardContent className="pt-6 space-y-5">
+            <CardContent className="pt-6 space-y-6">
+              {/* Seção 1: Perguntas Principais da Anamnese */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5 sm:col-span-2">
                   <Label className="text-xs font-bold text-slate-700">
@@ -1217,7 +1335,8 @@ function PatientDetailPage() {
                   <Input
                     value={treatmentGoal}
                     onChange={(e) => setTreatmentGoal(e.target.value)}
-                    placeholder="Ex: Reeducação alimentar e hipertrofia"
+                    placeholder="Ex: Reeducação alimentar e controle pressórico"
+                    className="bg-white border-slate-200 text-xs font-medium"
                   />
                 </div>
 
@@ -1293,21 +1412,77 @@ function PatientDetailPage() {
 
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-slate-700">Consumo Hídrico Diário</Label>
-                  <Input value={waterIntake} onChange={(e) => setWaterIntake(e.target.value)} />
+                  <Input
+                    value={waterIntake}
+                    onChange={(e) => setWaterIntake(e.target.value)}
+                    className="bg-white border-slate-200 text-xs"
+                  />
                 </div>
 
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-slate-700">Hábitos Intestinais</Label>
-                  <Input value={bowelHabits} onChange={(e) => setBowelHabits(e.target.value)} />
+                  <Input
+                    value={bowelHabits}
+                    onChange={(e) => setBowelHabits(e.target.value)}
+                    className="bg-white border-slate-200 text-xs"
+                  />
                 </div>
               </div>
 
+              {/* Seção 2: Perguntas Adicionais Personalizadas pelo Nutricionista */}
+              {customAnamnesisQuestions.length > 0 && (
+                <div className="pt-4 border-t border-slate-200 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-extrabold text-[#003366] uppercase tracking-wider">
+                      Perguntas Personalizadas da Anamnese ({customAnamnesisQuestions.length})
+                    </h4>
+                    <span className="text-[11px] text-slate-400">
+                      Você pode editar os títulos e as respostas
+                    </span>
+                  </div>
+
+                  <div className="space-y-4">
+                    {customAnamnesisQuestions.map((q) => (
+                      <div
+                        key={q.id}
+                        className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2 relative group"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <Input
+                            value={q.question}
+                            onChange={(e) => handleUpdateQuestionTitle(q.id, e.target.value)}
+                            className="text-xs font-extrabold text-[#003366] bg-white border-slate-200 h-8"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg shrink-0"
+                            onClick={() => handleDeleteQuestion(q.id)}
+                            title="Remover pergunta"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <textarea
+                          rows={2}
+                          value={q.answer}
+                          onChange={(e) => handleUpdateQuestionAnswer(q.id, e.target.value)}
+                          placeholder="Digite a resposta do paciente..."
+                          className="w-full rounded-md border border-slate-200 bg-white p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#003366]"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <Button
                 type="submit"
-                className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold gap-2 shadow-sm mt-4"
+                className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold gap-2 shadow-sm mt-4 rounded-xl py-3"
               >
                 <Save className="h-4 w-4" />
-                Salvar Anamnese no Prontuário Sesc
+                Salvar Anamnese no Prontuário
               </Button>
             </CardContent>
           </Card>
