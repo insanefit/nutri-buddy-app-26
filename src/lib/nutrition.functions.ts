@@ -10,10 +10,84 @@ const profileSchema = z.object({
 
 const patientSchema = z.object({
   patient_email: z.string().email(),
-  full_name: z.string().min(1).max(120).optional(),
+  full_name: z.string().min(1).max(120),
+  phone: z.string().optional(),
+  category: z.enum(["comerciario", "dependente", "publico_geral"]).default("comerciario"),
   daily_calorie_goal: z.number().int().min(500).max(10000).optional(),
   notes: z.string().max(2000).optional(),
 });
+
+const DEFAULT_SESC_PATIENTS = [
+  {
+    id: "ca8bee8e-8694-4902-b2f6-dea91ae4628a",
+    daily_calorie_goal: 2200,
+    created_at: new Date().toISOString(),
+    phone: "(96) 99123-4567",
+    category: "comerciario",
+    notes:
+      "Categoria: Comerciário | Telefone: (96) 99123-4567 | E-mail: joao.pedro@sescamapa.com.br | Altura: 175cm | Peso: 78.5kg | IMC: 25.6",
+    patient: { full_name: "João Pedro da Silva" },
+    profile: { full_name: "João Pedro da Silva" },
+  },
+  {
+    id: "b2222222-2222-4222-b222-222222222222",
+    daily_calorie_goal: 1900,
+    created_at: new Date().toISOString(),
+    phone: "(96) 98411-2233",
+    category: "dependente",
+    notes:
+      "Categoria: Dependente | Telefone: (96) 98411-2233 | E-mail: maria.santos@gmail.com | Altura: 162cm | Peso: 58.0kg | IMC: 22.1",
+    patient: { full_name: "Maria Eduarda Santos" },
+    profile: { full_name: "Maria Eduarda Santos" },
+  },
+  {
+    id: "b3333333-3333-4333-b333-333333333333",
+    daily_calorie_goal: 1800,
+    created_at: new Date().toISOString(),
+    phone: "(96) 99988-7766",
+    category: "publico_geral",
+    notes:
+      "Categoria: Público Geral | Telefone: (96) 99988-7766 | E-mail: carlos.mendes@outlook.com | Altura: 170cm | Peso: 89.0kg | IMC: 30.8",
+    patient: { full_name: "Carlos Alberto Mendes" },
+    profile: { full_name: "Carlos Alberto Mendes" },
+  },
+];
+
+export const createPatient = createServerFn({ method: "POST" })
+  .inputValidator((input) => patientSchema.parse(input))
+  .handler(async ({ data }) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const nutritionistId = user?.id || "64fb19c4-c829-4b17-b540-d3e8cbbfcc07";
+
+    const newPatientProfileId = crypto.randomUUID();
+    await supabase.from("profiles").insert({
+      id: newPatientProfileId,
+      full_name: data.full_name,
+      role: "patient",
+    });
+
+    const categoryLabels: Record<string, string> = {
+      comerciario: "Comerciário",
+      dependente: "Dependente de Comerciário",
+      publico_geral: "Público Geral",
+    };
+    const catLabel = categoryLabels[data.category] || "Comerciário";
+    const phoneText = data.phone ? ` | Telefone: ${data.phone}` : "";
+
+    const { error } = await supabase.from("patients").insert({
+      nutritionist_id: nutritionistId,
+      patient_id: newPatientProfileId,
+      daily_calorie_goal: data.daily_calorie_goal || 2000,
+      notes: `Categoria: ${catLabel}${phoneText} | E-mail: ${data.patient_email} | ${data.notes || ""}`,
+    });
+
+    if (error) {
+      console.error("[createPatient] Error:", error.message);
+    }
+    return { ok: true };
+  });
 
 const foodSchema = z.object({
   name: z.string().min(1).max(120),
@@ -140,36 +214,6 @@ const DEFAULT_SESC_FOODS = [
   },
 ];
 
-const DEFAULT_SESC_PATIENTS = [
-  {
-    id: "ca8bee8e-8694-4902-b2f6-dea91ae4628a",
-    daily_calorie_goal: 2200,
-    created_at: new Date().toISOString(),
-    notes:
-      "Paciente João Pedro da Silva | Sesc Macapá | Altura: 175cm | Peso: 78.5kg | IMC: 25.6 (Sobrepeso) | Objetivo: Reeducação Alimentar",
-    patient: { full_name: "João Pedro da Silva (Sesc Macapá)" },
-    profile: { full_name: "João Pedro da Silva (Sesc Macapá)" },
-  },
-  {
-    id: "b2222222-2222-4222-b222-222222222222",
-    daily_calorie_goal: 1900,
-    created_at: new Date().toISOString(),
-    notes:
-      "Paciente Maria Eduarda Santos | Sesc Amapá | Altura: 162cm | Peso: 58.0kg | IMC: 22.1 (Eutrofia) | Objetivo: Hipertrofia",
-    patient: { full_name: "Maria Eduarda Santos (Sesc Amapá)" },
-    profile: { full_name: "Maria Eduarda Santos (Sesc Amapá)" },
-  },
-  {
-    id: "b3333333-3333-4333-b333-333333333333",
-    daily_calorie_goal: 1800,
-    created_at: new Date().toISOString(),
-    notes:
-      "Paciente Carlos Alberto Mendes | Sesc Amapá | Altura: 170cm | Peso: 89.0kg | IMC: 30.8 (Obesidade I) | Acompanhamento preventivo",
-    patient: { full_name: "Carlos Alberto Mendes (Sesc Amapá)" },
-    profile: { full_name: "Carlos Alberto Mendes (Sesc Amapá)" },
-  },
-];
-
 function calculateMacros(quantity: number, food: any) {
   const ratio = quantity / 100;
   return {
@@ -222,34 +266,6 @@ export const getPatients = createServerFn({ method: "GET" }).handler(async () =>
     return DEFAULT_SESC_PATIENTS;
   }
 });
-
-export const createPatient = createServerFn({ method: "POST" })
-  .inputValidator((input) => patientSchema.parse(input))
-  .handler(async ({ data }) => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const nutritionistId = user?.id || "64fb19c4-c829-4b17-b540-d3e8cbbfcc07";
-
-    const newPatientProfileId = crypto.randomUUID();
-    await supabase.from("profiles").insert({
-      id: newPatientProfileId,
-      full_name: data.full_name || data.patient_email.split("@")[0],
-      role: "patient",
-    });
-
-    const { error } = await supabase.from("patients").insert({
-      nutritionist_id: nutritionistId,
-      patient_id: newPatientProfileId,
-      daily_calorie_goal: data.daily_calorie_goal || 2000,
-      notes: data.notes || `Paciente ${data.full_name || "Sesc"} | E-mail: ${data.patient_email}`,
-    });
-
-    if (error) {
-      console.error("[createPatient] Error:", error.message);
-    }
-    return { ok: true };
-  });
 
 export const getPatient = createServerFn({ method: "GET" })
   .inputValidator((id: string) => z.string().parse(id))

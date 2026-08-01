@@ -579,12 +579,36 @@ function PatientDetailPage() {
       {/* Cabeçalho do Prontuário Clínico */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-[#003366]">{patientName}</h1>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-blue-100 text-[#003366]">
-              Prontuário Sesc
-            </span>
-          </div>
+          {(() => {
+            const notesText = patient?.notes || "";
+            const isDependente = notesText.toLowerCase().includes("dependente");
+            const isComerciario =
+              notesText.toLowerCase().includes("comerciário") ||
+              (!isDependente && !notesText.toLowerCase().includes("público geral"));
+
+            const catBadge = isDependente
+              ? {
+                  text: "👨‍👩‍👧 Dependente de Comerciário",
+                  color: "bg-emerald-100 text-emerald-900 border-emerald-200",
+                }
+              : isComerciario
+                ? { text: "🏢 Comerciário", color: "bg-blue-100 text-[#003366] border-blue-200" }
+                : {
+                    text: "🌐 Público Geral",
+                    color: "bg-slate-100 text-slate-800 border-slate-200",
+                  };
+
+            return (
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-extrabold text-[#003366]">{patientName}</h1>
+                <span
+                  className={`text-xs font-extrabold px-3 py-1 rounded-full border shadow-2xs ${catBadge.color}`}
+                >
+                  {catBadge.text}
+                </span>
+              </div>
+            );
+          })()}
           <p className="text-xs text-slate-500 mt-1">
             Meta Calórica Recomendada:{" "}
             <strong>{patient?.daily_calorie_goal || 2000} kcal/dia</strong>
@@ -595,7 +619,7 @@ function PatientDetailPage() {
           {/* Emitir Receita / Prescrição Sesc */}
           <Dialog open={openPrescriptionDialog} onOpenChange={setOpenPrescriptionDialog}>
             <DialogTrigger asChild>
-              <Button className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold gap-1.5 shadow-sm">
+              <Button className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold gap-1.5 shadow-sm rounded-xl">
                 <Printer className="h-4 w-4" />
                 Imprimir Prescrição
               </Button>
@@ -624,6 +648,16 @@ function PatientDetailPage() {
                   <div>
                     <span className="font-bold text-slate-600 block">PACIENTE:</span>
                     <span className="text-slate-900 font-semibold">{patientName}</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-600 block">CATEGORIA SESC:</span>
+                    <span className="text-[#003366] font-bold">
+                      {patient?.notes?.toLowerCase().includes("dependente")
+                        ? "Dependente de Comerciário"
+                        : patient?.notes?.toLowerCase().includes("público geral")
+                          ? "Público Geral"
+                          : "Comerciário (Trabalhador do Comércio)"}
+                    </span>
                   </div>
                   <div>
                     <span className="font-bold text-slate-600 block">DATA DA EMISSÃO:</span>
