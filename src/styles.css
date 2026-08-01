@@ -71,45 +71,45 @@
 
 :root {
   --radius: 0.625rem;
-  /* Emerald Prestige: cream base, deep emerald primary, gold accent */
-  --background: oklch(0.965 0.018 95);
-  --foreground: oklch(0.24 0.04 165);
-  --card: oklch(0.99 0.008 95);
-  --card-foreground: oklch(0.24 0.04 165);
-  --popover: oklch(0.99 0.008 95);
-  --popover-foreground: oklch(0.24 0.04 165);
-  --primary: oklch(0.38 0.09 165);
-  --primary-foreground: oklch(0.97 0.015 95);
-  --secondary: oklch(0.93 0.02 95);
-  --secondary-foreground: oklch(0.3 0.06 165);
-  --muted: oklch(0.93 0.015 95);
-  --muted-foreground: oklch(0.5 0.03 165);
-  --accent: oklch(0.75 0.11 88);
-  --accent-foreground: oklch(0.24 0.05 88);
+  /* Sesc Official Design System: pure white base, deep navy primary (#003366), gold accent */
+  --background: oklch(0.985 0.002 245);
+  --foreground: oklch(0.2 0.05 250);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.05 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.05 250);
+  --primary: oklch(0.3 0.1 250);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.96 0.01 250);
+  --secondary-foreground: oklch(0.3 0.1 250);
+  --muted: oklch(0.96 0.005 245);
+  --muted-foreground: oklch(0.48 0.04 250);
+  --accent: oklch(0.8 0.14 85);
+  --accent-foreground: oklch(0.2 0.05 250);
   --destructive: oklch(0.55 0.19 27);
   --destructive-foreground: oklch(0.98 0.01 27);
-  --border: oklch(0.88 0.02 95);
-  --input: oklch(0.9 0.02 95);
-  --ring: oklch(0.45 0.1 165);
-  --chart-1: oklch(0.38 0.09 165);
-  --chart-2: oklch(0.55 0.1 165);
-  --chart-3: oklch(0.75 0.11 88);
+  --border: oklch(0.92 0.005 240);
+  --input: oklch(0.92 0.005 240);
+  --ring: oklch(0.3 0.1 250);
+  --chart-1: oklch(0.3 0.1 250);
+  --chart-2: oklch(0.55 0.1 250);
+  --chart-3: oklch(0.8 0.14 85);
   --chart-4: oklch(0.62 0.12 45);
   --chart-5: oklch(0.45 0.06 200);
-  --sidebar: oklch(0.94 0.02 95);
-  --sidebar-foreground: oklch(0.24 0.04 165);
-  --sidebar-primary: oklch(0.38 0.09 165);
-  --sidebar-primary-foreground: oklch(0.97 0.015 95);
-  --sidebar-accent: oklch(0.75 0.11 88);
-  --sidebar-accent-foreground: oklch(0.24 0.05 88);
-  --sidebar-border: oklch(0.88 0.02 95);
-  --sidebar-ring: oklch(0.45 0.1 165);
+  --sidebar: oklch(0.98 0.005 245);
+  --sidebar-foreground: oklch(0.2 0.05 250);
+  --sidebar-primary: oklch(0.3 0.1 250);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.96 0.01 250);
+  --sidebar-accent-foreground: oklch(0.3 0.1 250);
+  --sidebar-border: oklch(0.92 0.005 240);
+  --sidebar-ring: oklch(0.3 0.1 250);
 
   /* Nutrition semantic tokens */
   --success: oklch(0.52 0.11 160);
   --success-foreground: oklch(0.98 0.01 160);
-  --warning: oklch(0.75 0.11 88);
-  --warning-foreground: oklch(0.24 0.05 88);
+  --warning: oklch(0.8 0.14 85);
+  --warning-foreground: oklch(0.2 0.05 250);
   --info: oklch(0.5 0.07 200);
   --info-foreground: oklch(0.98 0.01 200);
 }
