@@ -57,15 +57,45 @@ const DEFAULT_SESC_PATIENTS = [
   },
 ];
 
+async function requireNutritionistUser(context: {
+  supabase: {
+    auth: { getUser: () => Promise<{ data: { user: { id: string } | null } }> };
+    from: (table: string) => {
+      select: (col: string) => {
+        eq: (
+          col: string,
+          val: string,
+        ) => {
+          maybeSingle: () => Promise<{ data: { role?: string } | null }>;
+        };
+      };
+    };
+  };
+}) {
+  const {
+    data: { user },
+  } = await context.supabase.auth.getUser();
+  if (!user) throw new Error("Acesso negado. Faça login para continuar.");
+
+  const { data: profile } = await context.supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profile && profile.role === "patient") {
+    throw new Error(
+      "Acesso restrito: Apenas nutricionistas credenciados têm permissão para realizar esta operação.",
+    );
+  }
+  return user;
+}
+
 export const createPatient = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => patientSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const {
-      data: { user },
-    } = await context.supabase.auth.getUser();
-    if (!user) throw new Error("Acesso negado. Usuário não autenticado.");
-
+    const user = await requireNutritionistUser(context);
     const nutritionistId = user.id;
 
     // Criar um UUID único para o perfil do paciente
@@ -1624,10 +1654,7 @@ export const createMeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => mealSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const {
-      data: { user },
-    } = await context.supabase.auth.getUser();
-    if (!user) throw new Error("Acesso negado.");
+    const user = await requireNutritionistUser(context);
 
     const { data: meal, error } = await context.supabase
       .from("meals")
@@ -1649,6 +1676,8 @@ export const addMealItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => mealItemSchema.parse(input))
   .handler(async ({ data, context }) => {
+    await requireNutritionistUser(context);
+
     const { data: food } = await context.supabase
       .from("foods")
       .select("*")
@@ -1675,6 +1704,8 @@ export const deleteMealItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((id: string) => z.string().parse(id))
   .handler(async ({ data: id, context }) => {
+    await requireNutritionistUser(context);
+
     const { error } = await context.supabase.from("meal_items").delete().eq("id", id);
     if (error) throw new Error(`Falha ao excluir item: ${error.message}`);
     return { ok: true };
@@ -1684,6 +1715,8 @@ export const deleteMeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((id: string) => z.string().parse(id))
   .handler(async ({ data: id, context }) => {
+    await requireNutritionistUser(context);
+
     const { error } = await context.supabase.from("meals").delete().eq("id", id);
     if (error) throw new Error(`Falha ao excluir refeição: ${error.message}`);
     return { ok: true };
@@ -1693,6 +1726,8 @@ export const deletePatient = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((id: string) => z.string().parse(id))
   .handler(async ({ data: id, context }) => {
+    await requireNutritionistUser(context);
+
     const { error } = await context.supabase.from("patients").delete().eq("id", id);
     if (error) throw new Error(`Falha ao excluir paciente: ${error.message}`);
     return { ok: true };
@@ -1725,6 +1760,7 @@ export const updatePatientClinicalData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => clinicalDataSchema.parse(input))
   .handler(async ({ data, context }) => {
+    await requireNutritionistUser(context);
     const { data: currentPatient, error: fetchErr } = await context.supabase
       .from("patients")
       .select("notes")

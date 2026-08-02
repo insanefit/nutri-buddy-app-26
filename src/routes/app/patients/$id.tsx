@@ -13,6 +13,11 @@ import {
   deletePatient,
   updatePatientClinicalData,
 } from "@/lib/nutrition.functions";
+import {
+  getBloodPressureClassification,
+  getGlucoseClassification,
+  getImcClassification,
+} from "@/lib/clinical-formulas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,16 +80,6 @@ const MEAL_NAMES = [
   { value: "Ceia", label: "Ceia" },
 ];
 
-function getImcClassification(imc: number) {
-  if (imc < 18.5) return { text: "Baixo Peso", color: "text-amber-600 bg-amber-50" };
-  if (imc < 25)
-    return { text: "Peso Adequado (Eutrofia)", color: "text-emerald-700 bg-emerald-50" };
-  if (imc < 30) return { text: "Sobrepeso", color: "text-amber-700 bg-amber-100" };
-  if (imc < 35) return { text: "Obesidade Grau I", color: "text-red-600 bg-red-50" };
-  if (imc < 40) return { text: "Obesidade Grau II", color: "text-red-700 bg-red-100" };
-  return { text: "Obesidade Grau III", color: "text-red-800 bg-red-200" };
-}
-
 function PatientDetailPage() {
   const { id } = useParams({ from: "/app/patients/$id" });
   const navigate = useNavigate();
@@ -93,6 +88,9 @@ function PatientDetailPage() {
   const [activeTab, setActiveTab] = useState<
     "anamnesis" | "anthropometry" | "diet" | "recipes" | "exams" | "notes"
   >("anamnesis");
+
+  const [date, setDate] = useState(today);
+  const [digitalHash, setDigitalHash] = useState("");
 
   const { data: patient } = useQuery({
     queryKey: ["patient", id],
@@ -105,10 +103,10 @@ function PatientDetailPage() {
     },
   });
   const { data: meals, refetch: refetchMeals } = useQuery({
-    queryKey: ["meals", id, today],
+    queryKey: ["meals", id, date],
     queryFn: async () => {
       try {
-        return await getMealsForPatient({ data: { patient_id: id, date: today } });
+        return await getMealsForPatient({ data: { patient_id: id, date } });
       } catch (err) {
         return [];
       }
@@ -135,145 +133,23 @@ function PatientDetailPage() {
       : null) ||
     "Paciente Sesc";
 
-  // Classificação de Pressão Arterial (Diretriz Brasileira de Hipertensão Arterial 2025 - SBC)
-  function getBloodPressureClassification(systolic: number, diastolic: number) {
-    if (!systolic || !diastolic || systolic <= 0 || diastolic <= 0) return null;
-
-    // Grau por PAS (Sistólica)
-    const getSystolicGrade = (s: number): number => {
-      if (s >= 180) return 4; // Estágio 3 / Crise
-      if (s >= 160) return 3; // Estágio 2
-      if (s >= 140) return 2; // Estágio 1
-      if (s >= 120) return 1; // Pré-hipertensão (PAS 120-139)
-      return 0; // Ótima/Normal (PAS < 120)
-    };
-
-    // Grau por PAD (Diastólica)
-    const getDiastolicGrade = (d: number): number => {
-      if (d >= 110) return 4; // Estágio 3 / Crise
-      if (d >= 100) return 3; // Estágio 2
-      if (d >= 90) return 2; // Estágio 1
-      if (d >= 80) return 1; // Pré-hipertensão (PAD 80-89)
-      return 0; // Ótima/Normal (PAD < 80)
-    };
-
-    const sysGrade = getSystolicGrade(systolic);
-    const diaGrade = getDiastolicGrade(diastolic);
-    const finalGrade = Math.max(sysGrade, diaGrade);
-
-    switch (finalGrade) {
-      case 4:
-        return {
-          status: "Hipertensão Estágio 3 / Crise (PAS ≥180 ou PAD ≥110 mmHg)",
-          description: "CRISE HIPERTENSIVA. Encaminhar de urgência ao atendimento médico.",
-          color: "text-white bg-rose-600 border-rose-700 font-extrabold animate-pulse",
-        };
-      case 3:
-        return {
-          status: "Hipertensão Estágio 2 (PAS 160-179 ou PAD 100-109 mmHg)",
-          description:
-            "Pressão arterial significativamente elevada. Consulta médica e nutricional contínua.",
-          color: "text-rose-900 bg-rose-100 border-rose-300 font-bold",
-        };
-      case 2:
-        return {
-          status: "Hipertensão Estágio 1 (PAS 140-159 ou PAD 90-99 mmHg)",
-          description:
-            "Pressão arterial elevada. Recomenda-se acompanhamento médico e nutricional.",
-          color: "text-orange-900 bg-orange-100 border-orange-300 font-bold",
-        };
-      case 1:
-        return {
-          status: "Pré-Hipertensão (PAS 120-139 ou PAD 80-89 mmHg)",
-          description:
-            "Faixa de pré-hipertensão conforme a DBHA/SBC 2025. Orientar hábitos saudáveis e readequação nutricional.",
-          color: "text-amber-800 bg-amber-50 border-amber-300 font-semibold",
-        };
-      case 0:
-      default:
-        return {
-          status: "Ótima / Normal (PAS < 120 e PAD < 80 mmHg)",
-          description: "Pressão arterial em nível ideal.",
-          color: "text-emerald-700 bg-emerald-50 border-emerald-200 font-semibold",
-        };
-    }
-  }
-
-  // Classificação de Glicemia Capilar (Sociedade Brasileira de Diabetes - SBD 2025)
-  function getGlucoseClassification(glucose: number, type: "jejum" | "casual" = "jejum") {
-    if (!glucose || glucose <= 0) return null;
-
-    if (glucose < 70) {
-      return {
-        status: "Hipoglicemia (<70 mg/dL)",
-        description:
-          "Glicemia abaixo do limite de segurança. Administrar carboidrato simples imediato.",
-        color: "text-white bg-rose-600 border-rose-700 font-extrabold animate-pulse",
-      };
-    }
-
-    if (type === "jejum") {
-      if (glucose <= 99) {
-        return {
-          status: "Normoglicemia (Jejum 70-99 mg/dL)",
-          description: "Glicemia de jejum em nível normal e desejável.",
-          color: "text-emerald-700 bg-emerald-50 border-emerald-200",
-        };
-      }
-      if (glucose <= 125) {
-        return {
-          status: "Glicemia de Jejum Alterada (Pré-Diabetes: 100-125 mg/dL)",
-          description: "Atenção: Indicativo de pré-diabetes segundo as Diretrizes SBD 2025.",
-          color: "text-amber-900 bg-amber-100 border-amber-300 font-bold",
-        };
-      }
-      return {
-        status: "Glicemia Elevada em Jejum (≥126 mg/dL - Suspeita de Diabetes)",
-        description: "Alerta: Glicemia de jejum ≥ 126 mg/dL. Recomenda-se investigação médica.",
-        color: "text-rose-900 bg-rose-100 border-rose-300 font-bold",
-      };
-    } else {
-      if (glucose <= 139) {
-        return {
-          status: "Normoglicemia Casual (<140 mg/dL)",
-          description: "Glicemia casual/pós-prandial dentro dos limites normais.",
-          color: "text-emerald-700 bg-emerald-50 border-emerald-200",
-        };
-      }
-      if (glucose <= 199) {
-        return {
-          status: "Glicemia Casual Alterada (140-199 mg/dL)",
-          description:
-            "Atenção: Glicemia casual elevada. Recomenda-se monitoramento e teste confirmatório.",
-          color: "text-amber-900 bg-amber-100 border-amber-300 font-bold",
-        };
-      }
-      return {
-        status: "Hiperglicemia Casual (≥ 200 mg/dL - Suspeita de Diabetes)",
-        description:
-          "Alerta: Glicemia casual ≥ 200 mg/dL com sintomas. Necessita controle clínico urgente.",
-        color: "text-rose-900 bg-rose-100 border-rose-300 font-bold",
-      };
-    }
-  }
-
-  // 1. Estados de Medidas Corporais & Triagem de Sinais Vitais
-  const [weight, setWeight] = useState("78.5");
-  const [height, setHeight] = useState("175");
-  const [waist, setWaist] = useState("84");
-  const [hip, setHip] = useState("98");
-  const [abdomen, setAbdomen] = useState("88");
-  const [chest, setChest] = useState("96");
-  const [rightArm, setRightArm] = useState("33");
-  const [leftArm, setLeftArm] = useState("33");
-  const [rightThigh, setRightThigh] = useState("56");
-  const [leftThigh, setLeftThigh] = useState("56");
-  const [bodyFat, setBodyFat] = useState("21.5");
+  // 1. Estados de Medidas Corporais & Triagem de Sinais Vitais (iniciam limpos)
+  const [weight, setWeight] = useState("");
+  const [height, setHeight] = useState("");
+  const [waist, setWaist] = useState("");
+  const [hip, setHip] = useState("");
+  const [abdomen, setAbdomen] = useState("");
+  const [chest, setChest] = useState("");
+  const [rightArm, setRightArm] = useState("");
+  const [leftArm, setLeftArm] = useState("");
+  const [rightThigh, setRightThigh] = useState("");
+  const [leftThigh, setLeftThigh] = useState("");
+  const [bodyFat, setBodyFat] = useState("");
 
   // Estados de Sinais Vitais (Pressão Arterial e Glicemia)
-  const [systolicBP, setSystolicBP] = useState("120"); // PAS (mmHg)
-  const [diastolicBP, setDiastolicBP] = useState("80"); // PAD (mmHg)
-  const [glucoseValue, setGlucoseValue] = useState("92"); // Glicemia (mg/dL)
+  const [systolicBP, setSystolicBP] = useState(""); // PAS (mmHg)
+  const [diastolicBP, setDiastolicBP] = useState(""); // PAD (mmHg)
+  const [glucoseValue, setGlucoseValue] = useState(""); // Glicemia (mg/dL)
   const [glucoseType, setGlucoseType] = useState<"jejum" | "casual">("jejum");
 
   // Restaurar e hidratar os dados reais salvos no banco Supabase ao carregar
@@ -317,23 +193,22 @@ function PatientDetailPage() {
     }
   }, [patient]);
 
-  const [evaluationsHistory, setEvaluationsHistory] = useState([
-    {
-      date: "15/05/2026",
-      label: "Triagem & Avaliação Inicial Sesc",
-      weight: "81.0 kg",
-      height: "175 cm",
-      imc: "26.4",
-      pa: "128/82 mmHg",
-      paStatus: "Normal",
-      glicemia: "95 mg/dL",
-      glicemiaStatus: "Normoglicemia",
-      waist: "88 cm",
-      hip: "100 cm",
-      rcq: "0.88",
-      bodyFat: "24.0%",
-    },
-  ]);
+  const [evaluationsHistory, setEvaluationsHistory] = useState<
+    Array<{
+      date: string;
+      label: string;
+      weight: string;
+      height: string;
+      imc: string;
+      pa: string;
+      paStatus: string;
+      glicemia: string;
+      glicemiaStatus: string;
+      waist?: string;
+      rcq?: string;
+      bodyFat?: string;
+    }>
+  >([]);
 
   const numWeight = Number(weight) || 0;
   const numHeightM = (Number(height) || 0) / 100;
@@ -358,17 +233,19 @@ function PatientDetailPage() {
     const newEval = {
       date: format(new Date(), "dd/MM/yyyy"),
       label: `Triagem & Retorno ${evaluationsHistory.length + 1}`,
-      weight: `${weight} kg`,
-      height: `${height} cm`,
+      weight: weight ? `${weight} kg` : "N/I",
+      height: height ? `${height} cm` : "N/I",
       imc: `${imcValue}`,
-      pa: `${systolicBP}/${diastolicBP} mmHg`,
+      pa: systolicBP && diastolicBP ? `${systolicBP}/${diastolicBP} mmHg` : "N/I",
       paStatus: bpDiag?.status || "Normal",
-      glicemia: `${glucoseValue} mg/dL (${glucoseType === "jejum" ? "Jejum" : "Casual"})`,
+      glicemia: glucoseValue
+        ? `${glucoseValue} mg/dL (${glucoseType === "jejum" ? "Jejum" : "Casual"})`
+        : "N/I",
       glicemiaStatus: glucoseDiag?.status || "Normoglicemia",
-      waist: `${waist} cm`,
-      hip: `${hip} cm`,
+      waist: waist ? `${waist} cm` : "N/I",
+      hip: hip ? `${hip} cm` : "N/I",
       rcq: `${rcqValue}`,
-      bodyFat: `${bodyFat}%`,
+      bodyFat: bodyFat ? `${bodyFat}%` : "N/I",
     };
     setEvaluationsHistory([newEval, ...evaluationsHistory]);
     try {
@@ -399,48 +276,21 @@ function PatientDetailPage() {
     }
   };
 
-  // 2. Estados de Anamnese Clínica & Nutricional
-  const [clinicalHistory, setClinicalHistory] = useState(
-    "Hipertensão arterial sistêmica leve sob acompanhamento médico. Sem histórico de cirurgias bariátricas ou gastrointestinais.",
-  );
-  const [medications, setMedications] = useState(
-    "Losartana Potássica 50mg (1x ao dia pela manhã).",
-  );
-  const [allergies, setAllergies] = useState(
-    "Intolerância leve à lactose. Sem alergias alimentares graves relatas.",
-  );
-  const [preferences, setPreferences] = useState(
-    "Preferência por peixes grelhados, legumes assados, frutas tropicais e açaí natural.",
-  );
-  const [aversions, setAversions] = useState(
-    "Aversão a fígado bovino e alimentos excessivamente gordurosos.",
-  );
-  const [physicalActivity, setPhysicalActivity] = useState(
-    "Caminhada moderada 3 vezes por semana (45 minutos por sessão).",
-  );
-  const [waterIntake, setWaterIntake] = useState("2.5 Litros de água/dia (aprox. 8 a 10 copos).");
-  const [bowelHabits, setBowelHabits] = useState(
-    "Funcionamento intestinal regular (1 vez ao dia, fezes tipo 3 ou 4 de Bristol).",
-  );
-  const [treatmentGoal, setTreatmentGoal] = useState(
-    "Reeducação alimentar, controle pressórico e redução de gordura corporal visceral.",
-  );
+  // 2. Estados de Anamnese Clínica & Nutricional (iniciam limpos)
+  const [clinicalHistory, setClinicalHistory] = useState("");
+  const [medications, setMedications] = useState("");
+  const [allergies, setAllergies] = useState("");
+  const [preferences, setPreferences] = useState("");
+  const [aversions, setAversions] = useState("");
+  const [physicalActivity, setPhysicalActivity] = useState("");
+  const [waterIntake, setWaterIntake] = useState("");
+  const [bowelHabits, setBowelHabits] = useState("");
+  const [treatmentGoal, setTreatmentGoal] = useState("");
 
   // Perguntas e Campos Dinâmicos da Anamnese
   const [customAnamnesisQuestions, setCustomAnamnesisQuestions] = useState<
     Array<{ id: string; question: string; answer: string }>
-  >([
-    {
-      id: "1",
-      question: "Histórico Familiar de Doenças Crônicas (Hipertensão, Diabetes)",
-      answer: "Pai hipertenso, mãe com histórico de diabetes tipo 2.",
-    },
-    {
-      id: "2",
-      question: "Qualidade e Horas de Sono por Noite",
-      answer: "Relata de 6 a 7 horas de sono contínuo por noite.",
-    },
-  ]);
+  >([]);
 
   const [openNewQuestionDialog, setOpenNewQuestionDialog] = useState(false);
   const [newQuestionTitle, setNewQuestionTitle] = useState("");
@@ -668,7 +518,6 @@ function PatientDetailPage() {
   };
 
   // 6. Estados do Plano Alimentar / Refeições
-  const [date, setDate] = useState(today);
   const [mealName, setMealName] = useState("Café da manhã");
   const [selectedFood, setSelectedFood] = useState("");
   const [quantity, setQuantity] = useState("100");
@@ -988,13 +837,17 @@ function PatientDetailPage() {
                   </div>
                 </div>
 
-                <div className="text-[9px] text-slate-400 pt-3 border-t border-slate-100 flex items-center justify-between">
+                <div className="text-[9px] text-slate-400 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-1">
                   <span>
                     🔒 Documento oficial compatível com{" "}
                     <strong>Assinador Digital Sesc (Certificação ICP-Brasil / Gov.br)</strong> e
                     LGPD.
                   </span>
-                  <span>Via do Prontuário / Paciente</span>
+                  {digitalHash && (
+                    <span className="font-mono text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      {digitalHash}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -1009,11 +862,24 @@ function PatientDetailPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
+                  onClick={async () => {
+                    const hash = `SHA256:${Array.from(
+                      new Uint8Array(
+                        await crypto.subtle.digest(
+                          "SHA-256",
+                          new TextEncoder().encode(patientName + Date.now()),
+                        ),
+                      ),
+                    )
+                      .map((b) => b.toString(16).padStart(2, "0"))
+                      .join("")
+                      .substring(0, 32)
+                      .toUpperCase()}`;
+                    setDigitalHash(hash);
                     toast.success(
-                      "Documento formatado e pronto para upload no Assinador Digital Sesc!",
+                      `Hash SHA-256 gerado (${hash.substring(0, 16)}...). Documento pronto para o Assinador Digital Sesc!`,
                     );
-                    window.print();
+                    setTimeout(() => window.print(), 300);
                   }}
                   className="flex-1 border-[#003366] text-[#003366] hover:bg-blue-50 font-bold rounded-xl py-2.5 text-xs gap-1.5"
                 >

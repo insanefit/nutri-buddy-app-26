@@ -50,7 +50,6 @@ function AuthPage() {
             emailRedirectTo: window.location.origin,
             data: {
               full_name: fullName,
-              role: role,
             },
           },
         });
