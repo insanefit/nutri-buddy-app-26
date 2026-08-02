@@ -57,21 +57,15 @@ function PatientsPage() {
   const [loading, setLoading] = useState(false);
 
   const filteredPatients = patients?.filter((patientItem) => {
-    const pName =
-      (patientItem.patient as { full_name?: string } | null)?.full_name ||
-      (patientItem as { profile?: { full_name?: string } })?.profile?.full_name ||
-      patientItem.notes ||
-      "";
+    const pName = patientItem.full_name || patientItem.notes || "";
     return pName.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   // Cálculo de Métricas do Público Alvo Sesc
   const totalCount = patients?.length || 0;
-  const comerciariosCount =
-    patients?.filter((p) => (p.notes || "").toLowerCase().includes("comerciário")).length || 0;
-  const dependentesCount =
-    patients?.filter((p) => (p.notes || "").toLowerCase().includes("dependente")).length || 0;
-  const publicoGeralCount = Math.max(0, totalCount - comerciariosCount - dependentesCount);
+  const comerciariosCount = patients?.filter((p) => p.category === "comerciario").length || 0;
+  const dependentesCount = patients?.filter((p) => p.category === "dependente").length || 0;
+  const publicoGeralCount = patients?.filter((p) => p.category === "publico_geral").length || 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -293,26 +287,15 @@ function PatientsPage() {
       {/* Grid de Cards dos Pacientes em Tamanho 100% Igual */}
       <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 items-stretch">
         {filteredPatients?.map((patientItem) => {
-          const patientName =
-            (patientItem.patient as { full_name?: string } | null)?.full_name ||
-            (patientItem as { profile?: { full_name?: string } })?.profile?.full_name ||
-            (patientItem.notes && patientItem.notes.includes("|")
-              ? patientItem.notes.split("|")[0].replace("Paciente", "").trim()
-              : null) ||
-            "Paciente Sesc";
+          const patientName = patientItem.full_name || "Paciente Sesc";
 
-          const notesText = patientItem.notes || "";
-          const isComerciario =
-            notesText.toLowerCase().includes("comerciário") ||
-            (!notesText.toLowerCase().includes("dependente") &&
-              !notesText.toLowerCase().includes("público geral"));
-          const isDependente = notesText.toLowerCase().includes("dependente");
-
-          const categoryBadge = isDependente
-            ? { text: "Dependente", color: "bg-emerald-100 text-emerald-900 border-emerald-200" }
-            : isComerciario
-              ? { text: "Comerciário", color: "bg-blue-100 text-[#003366] border-blue-200" }
-              : { text: "Público Geral", color: "bg-slate-100 text-slate-800 border-slate-200" };
+          const categoryValue = patientItem.category || "comerciario";
+          const categoryBadge =
+            categoryValue === "dependente"
+              ? { text: "Dependente", color: "bg-emerald-100 text-emerald-900 border-emerald-200" }
+              : categoryValue === "publico_geral"
+                ? { text: "Público Geral", color: "bg-slate-100 text-slate-800 border-slate-200" }
+                : { text: "Comerciário", color: "bg-blue-100 text-[#003366] border-blue-200" };
 
           return (
             <Card

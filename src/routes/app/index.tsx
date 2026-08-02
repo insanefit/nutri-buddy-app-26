@@ -133,13 +133,7 @@ function DashboardPage() {
           {patients && patients.length > 0 ? (
             <div className="divide-y divide-slate-100">
               {patients.slice(0, 6).map((patientItem) => {
-                const patientName =
-                  (patientItem.patient as { full_name?: string } | null)?.full_name ||
-                  (patientItem as { profile?: { full_name?: string } })?.profile?.full_name ||
-                  (patientItem.notes && patientItem.notes.includes("|")
-                    ? patientItem.notes.split("|")[0].replace("Paciente", "").trim()
-                    : null) ||
-                  "Paciente Sesc";
+                const patientName = patientItem.full_name || patientItem.notes || "Paciente Sesc";
 
                 return (
                   <div

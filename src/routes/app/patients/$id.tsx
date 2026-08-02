@@ -125,13 +125,7 @@ function PatientDetailPage() {
     initialData: [],
   });
 
-  const patientName =
-    (patient?.patient as { full_name?: string } | null)?.full_name ||
-    (patient as { profile?: { full_name?: string } } | null)?.profile?.full_name ||
-    (patient?.notes && patient.notes.includes("|")
-      ? patient.notes.split("|")[0].replace("Paciente", "").trim()
-      : null) ||
-    "Paciente Sesc";
+  const patientName = patient?.full_name || "Paciente Sesc";
 
   // 1. Estados de Medidas Corporais & Triagem de Sinais Vitais (iniciam limpos)
   const [weight, setWeight] = useState("");
@@ -233,19 +227,19 @@ function PatientDetailPage() {
     const newEval = {
       date: format(new Date(), "dd/MM/yyyy"),
       label: `Triagem & Retorno ${evaluationsHistory.length + 1}`,
-      weight: weight ? `${weight} kg` : "N/I",
-      height: height ? `${height} cm` : "N/I",
-      imc: `${imcValue}`,
-      pa: systolicBP && diastolicBP ? `${systolicBP}/${diastolicBP} mmHg` : "N/I",
-      paStatus: bpDiag?.status || "Normal",
+      weight: weight ? `${weight} kg` : "Não informado",
+      height: height ? `${height} cm` : "Não informado",
+      imc: imcValue > 0 ? `${imcValue}` : "Não informado",
+      pa: systolicBP && diastolicBP ? `${systolicBP}/${diastolicBP} mmHg` : "Não informado",
+      paStatus: bpDiag?.status || "Não informado",
       glicemia: glucoseValue
         ? `${glucoseValue} mg/dL (${glucoseType === "jejum" ? "Jejum" : "Casual"})`
-        : "N/I",
-      glicemiaStatus: glucoseDiag?.status || "Normoglicemia",
-      waist: waist ? `${waist} cm` : "N/I",
-      hip: hip ? `${hip} cm` : "N/I",
-      rcq: `${rcqValue}`,
-      bodyFat: bodyFat ? `${bodyFat}%` : "N/I",
+        : "Não informado",
+      glicemiaStatus: glucoseDiag?.status || "Não informado",
+      waist: waist ? `${waist} cm` : "Não informado",
+      hip: hip ? `${hip} cm` : "Não informado",
+      rcq: rcqValue > 0 ? `${rcqValue}` : "Não informado",
+      bodyFat: bodyFat ? `${bodyFat}%` : "Não informado",
     };
     setEvaluationsHistory([newEval, ...evaluationsHistory]);
     try {
@@ -837,54 +831,19 @@ function PatientDetailPage() {
                   </div>
                 </div>
 
-                <div className="text-[9px] text-slate-400 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-1">
-                  <span>
-                    🔒 Documento oficial compatível com{" "}
-                    <strong>Assinador Digital Sesc (Certificação ICP-Brasil / Gov.br)</strong> e
-                    LGPD.
-                  </span>
-                  {digitalHash && (
-                    <span className="font-mono text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                      {digitalHash}
-                    </span>
-                  )}
+                <div className="text-[9px] text-slate-400 pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <span>🔒 Documento emitido em conformidade com a LGPD.</span>
+                  <span>Via do Prontuário / Paciente</span>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex justify-end">
                 <Button
                   onClick={() => window.print()}
-                  className="flex-1 bg-[#003366] hover:bg-[#002244] text-white font-bold rounded-xl py-2.5 text-xs gap-1.5 shadow-xs"
+                  className="w-full sm:w-auto bg-[#003366] hover:bg-[#002244] text-white font-bold rounded-xl py-2.5 px-6 text-xs gap-1.5 shadow-xs"
                 >
                   <Printer className="h-4 w-4" />
-                  Imprimir Termo (PDF)
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={async () => {
-                    const hash = `SHA256:${Array.from(
-                      new Uint8Array(
-                        await crypto.subtle.digest(
-                          "SHA-256",
-                          new TextEncoder().encode(patientName + Date.now()),
-                        ),
-                      ),
-                    )
-                      .map((b) => b.toString(16).padStart(2, "0"))
-                      .join("")
-                      .substring(0, 32)
-                      .toUpperCase()}`;
-                    setDigitalHash(hash);
-                    toast.success(
-                      `Hash SHA-256 gerado (${hash.substring(0, 16)}...). Documento pronto para o Assinador Digital Sesc!`,
-                    );
-                    setTimeout(() => window.print(), 300);
-                  }}
-                  className="flex-1 border-[#003366] text-[#003366] hover:bg-blue-50 font-bold rounded-xl py-2.5 text-xs gap-1.5"
-                >
-                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                  Exportar p/ Assinador Digital Sesc
+                  Imprimir PDF
                 </Button>
               </div>
             </DialogContent>
@@ -1013,35 +972,20 @@ function PatientDetailPage() {
                   </div>
                   <div className="text-[9px] text-slate-400 pt-2 border-t border-slate-100 w-full flex items-center justify-between">
                     <span>
-                      🔒 Documento compatível com{" "}
-                      <strong>Assinador Digital Sesc (ICP-Brasil / Gov.br)</strong> e LGPD.
+                      🔒 Prescrição médica/nutricional emitida em conformidade com a LGPD.
                     </span>
                     <span>Sesc Saúde Nutricional</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex justify-end">
                 <Button
                   onClick={() => window.print()}
-                  className="flex-1 bg-[#003366] hover:bg-[#002244] text-white font-bold rounded-xl py-2.5 text-xs gap-1.5 shadow-xs"
+                  className="w-full sm:w-auto bg-[#003366] hover:bg-[#002244] text-white font-bold rounded-xl py-2.5 px-6 text-xs gap-1.5 shadow-xs"
                 >
                   <Printer className="h-4 w-4" />
-                  Imprimir Prescrição (PDF)
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    toast.success(
-                      "Prescrição formatada e pronta para upload no Assinador Digital Sesc!",
-                    );
-                    window.print();
-                  }}
-                  className="flex-1 border-[#003366] text-[#003366] hover:bg-blue-50 font-bold rounded-xl py-2.5 text-xs gap-1.5"
-                >
-                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                  Exportar p/ Assinador Digital Sesc
+                  Imprimir PDF
                 </Button>
               </div>
             </DialogContent>

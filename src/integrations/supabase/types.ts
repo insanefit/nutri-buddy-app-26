@@ -159,30 +159,42 @@ export type Database = {
       };
       patients: {
         Row: {
+          category: string;
           created_at: string;
           daily_calorie_goal: number | null;
+          email: string | null;
+          full_name: string;
           id: string;
           notes: string | null;
           nutritionist_id: string;
-          patient_id: string;
+          patient_user_id: string | null;
+          phone: string | null;
           updated_at: string;
         };
         Insert: {
+          category?: string;
           created_at?: string;
           daily_calorie_goal?: number | null;
+          email?: string | null;
+          full_name: string;
           id?: string;
           notes?: string | null;
           nutritionist_id: string;
-          patient_id: string;
+          patient_user_id?: string | null;
+          phone?: string | null;
           updated_at?: string;
         };
         Update: {
+          category?: string;
           created_at?: string;
           daily_calorie_goal?: number | null;
+          email?: string | null;
+          full_name?: string;
           id?: string;
           notes?: string | null;
           nutritionist_id?: string;
-          patient_id?: string;
+          patient_user_id?: string | null;
+          phone?: string | null;
           updated_at?: string;
         };
         Relationships: [
@@ -194,10 +206,45 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "patients_patient_id_fkey";
-            columns: ["patient_id"];
+            foreignKeyName: "patients_patient_user_id_fkey";
+            columns: ["patient_user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      lgpd_consents: {
+        Row: {
+          consent_given: boolean;
+          consent_version: string;
+          created_at: string;
+          id: string;
+          nutritionist_id: string;
+          patient_id: string;
+        };
+        Insert: {
+          consent_given?: boolean;
+          consent_version?: string;
+          created_at?: string;
+          id?: string;
+          nutritionist_id: string;
+          patient_id: string;
+        };
+        Update: {
+          consent_given?: boolean;
+          consent_version?: string;
+          created_at?: string;
+          id?: string;
+          nutritionist_id?: string;
+          patient_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "lgpd_consents_patient_id_fkey";
+            columns: ["patient_id"];
+            isOneToOne: false;
+            referencedRelation: "patients";
             referencedColumns: ["id"];
           },
         ];

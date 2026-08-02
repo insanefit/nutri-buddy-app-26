@@ -63,10 +63,19 @@ export function getBloodPressureClassification(systolic: number, diastolic: numb
 export function getGlucoseClassification(glucose: number, type: "jejum" | "casual") {
   if (!glucose || glucose <= 0) return null;
 
+  if (glucose < 70) {
+    return {
+      status: "Hipoglicemia (<70 mg/dL)",
+      description:
+        "ALERTA: Glicemia abaixo de 70 mg/dL. Risco de hipoglicemia. Administrar carboidrato simples imediato.",
+      color: "text-white bg-rose-600 border-rose-700 font-extrabold animate-pulse",
+    };
+  }
+
   if (type === "jejum") {
-    if (glucose < 100) {
+    if (glucose <= 99) {
       return {
-        status: "Normoglicemia (Jejum < 100 mg/dL)",
+        status: "Normoglicemia (Jejum 70-99 mg/dL)",
         description: "Glicemia de jejum dentro dos padrões normais de referência (SBD 2025).",
         color: "text-emerald-700 bg-emerald-50 border-emerald-200",
       };
@@ -82,13 +91,13 @@ export function getGlucoseClassification(glucose: number, type: "jejum" | "casua
     return {
       status: "Hiperglicemia em Jejum (≥ 126 mg/dL - Suspeita de Diabetes)",
       description:
-        "Alerta: Nível compativel com suspeita de Diabetes Mellitus. Encaminhar para teste oral de tolerância a glicose.",
+        "Alerta: Nível compatível com suspeita de Diabetes Mellitus. Encaminhar para teste oral de tolerância a glicose.",
       color: "text-rose-900 bg-rose-100 border-rose-300 font-bold",
     };
   } else {
-    if (glucose < 140) {
+    if (glucose <= 139) {
       return {
-        status: "Normoglicemia Casual (< 140 mg/dL)",
+        status: "Normoglicemia Casual (70-139 mg/dL)",
         description: "Glicemia casual dentro dos limites de tolerância.",
         color: "text-emerald-700 bg-emerald-50 border-emerald-200",
       };

@@ -6,7 +6,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 const profileSchema = z.object({
   full_name: z.string().min(1).max(120).optional(),
   avatar_url: z.string().url().max(500).optional().or(z.literal("")),
-  role: z.enum(["nutritionist", "patient"]).optional(),
 });
 
 const patientSchema = z.object({
@@ -57,37 +56,29 @@ const DEFAULT_SESC_PATIENTS = [
   },
 ];
 
-async function requireNutritionistUser(context: {
-  supabase: {
-    auth: { getUser: () => Promise<{ data: { user: { id: string } | null } }> };
-    from: (table: string) => {
-      select: (col: string) => {
-        eq: (
-          col: string,
-          val: string,
-        ) => {
-          maybeSingle: () => Promise<{ data: { role?: string } | null }>;
-        };
-      };
-    };
-  };
-}) {
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+
+async function requireNutritionistUser(context: { supabase: SupabaseClient<Database> }) {
   const {
     data: { user },
+    error: userErr,
   } = await context.supabase.auth.getUser();
-  if (!user) throw new Error("Acesso negado. Faça login para continuar.");
 
-  const { data: profile } = await context.supabase
+  if (userErr || !user) {
+    throw new Error("Unauthorized: Usuário não autenticado.");
+  }
+
+  const { data: profile, error: profileErr } = await context.supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
 
-  if (profile && profile.role === "patient") {
-    throw new Error(
-      "Acesso restrito: Apenas nutricionistas credenciados têm permissão para realizar esta operação.",
-    );
+  if (profileErr || !profile || profile.role !== "nutritionist") {
+    throw new Error("Forbidden: Acesso restrito a nutricionistas credenciados.");
   }
+
   return user;
 }
 
@@ -98,55 +89,39 @@ export const createPatient = createServerFn({ method: "POST" })
     const user = await requireNutritionistUser(context);
     const nutritionistId = user.id;
 
-    // Criar um UUID único para o perfil do paciente
-    const newPatientProfileId = crypto.randomUUID();
-
-    // Inserir perfil do paciente na tabela profiles
-    const { error: profileError } = await context.supabase.from("profiles").insert({
-      id: newPatientProfileId,
-      full_name: data.full_name,
-      role: "patient",
-    });
-
-    if (profileError) {
-      console.error("[createPatient] Error creating profile:", profileError.message);
-      throw new Error(`Falha ao registrar perfil do paciente: ${profileError.message}`);
-    }
-
-    const categoryLabels: Record<string, string> = {
-      comerciario: "Comerciário",
-      dependente: "Dependente de Comerciário",
-      publico_geral: "Público Geral",
-    };
-    const catLabel = categoryLabels[data.category] || "Comerciário";
-
-    const lgpdRecord = {
-      categoryLabel: catLabel,
-      phone: data.phone || "",
-      email: data.patient_email,
-      full_name: data.full_name,
-      notes: data.notes || "",
-      lgpd_consented_at: new Date().toISOString(),
-      lgpd_version: "1.0",
-      lgpd_consent_status: true,
-    };
-
-    const { data: inserted, error } = await context.supabase
+    // Inserir registro demográfico do paciente diretamente em patients (sem perfil falso em profiles)
+    const { data: insertedPatient, error: patientErr } = await context.supabase
       .from("patients")
       .insert({
         nutritionist_id: nutritionistId,
-        patient_id: newPatientProfileId,
+        full_name: data.full_name,
+        email: data.patient_email || null,
+        phone: data.phone || null,
+        category: data.category || "comerciario",
         daily_calorie_goal: data.daily_calorie_goal || 2000,
-        notes: JSON.stringify(lgpdRecord),
+        notes: data.notes || "",
       })
       .select()
       .single();
 
-    if (error) {
-      console.error("[createPatient] Error:", error.message);
-      throw new Error(`Falha ao cadastrar paciente no banco de dados: ${error.message}`);
+    if (patientErr || !insertedPatient) {
+      console.error("[createPatient] Error inserting patient:", patientErr?.message);
+      throw new Error(`Falha ao cadastrar paciente no banco de dados: ${patientErr?.message}`);
     }
-    return inserted;
+
+    // Registrar consentimento LGPD em tabela própria auditável
+    const { error: lgpdErr } = await context.supabase.from("lgpd_consents").insert({
+      patient_id: insertedPatient.id,
+      nutritionist_id: nutritionistId,
+      consent_given: true,
+      consent_version: "v1.0-2026",
+    });
+
+    if (lgpdErr) {
+      console.error("[createPatient] Error recording LGPD consent:", lgpdErr.message);
+    }
+
+    return insertedPatient;
   });
 
 const foodSchema = z.object({
@@ -1572,7 +1547,7 @@ export const getPatients = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("patients")
-      .select("*, patient:profiles!patients_patient_id_fkey(full_name, avatar_url)")
+      .select("*")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -1588,7 +1563,7 @@ export const getPatient = createServerFn({ method: "GET" })
   .handler(async ({ data: id, context }) => {
     const { data, error } = await context.supabase
       .from("patients")
-      .select("*, patient:profiles!patients_patient_id_fkey(full_name, avatar_url)")
+      .select("*")
       .eq("id", id)
       .maybeSingle();
 
