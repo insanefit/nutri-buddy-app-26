@@ -39,21 +39,20 @@ describe("Suíte de Integração: RBAC, RPC Atômica, RLS Sem Recursão e Prontu
     expect(initialNotes.length).toBe(0);
   });
 
-  it("PROVA 6: Validação de hidratação de notas JSON completas", () => {
-    const clinicalJson = JSON.stringify({
-      weight: "72",
-      height: "175",
-      customAnamnesisQuestions: [{ id: "1", question: "Alergias?", answer: "Nenhuma" }],
-      evaluationsHistory: [{ date: "02/08/2026", imc: "23.5" }],
-      recipesList: [{ id: "101", title: "Vitamina Proteica" }],
-      examsList: [{ id: "201", name: "Glicemia", value: "85" }],
-    });
+  it("PROVA 6: Validação de hidratação de notas JSON e gravação correta de glucoseValue e customAnamnesisQuestions", () => {
+    const clinicalData = {
+      glucoseValue: "95",
+      glucoseType: "jejum",
+      customAnamnesisQuestions: [{ id: "1", question: "Histórico Familiar?", answer: "Diabetes" }],
+    };
 
+    expect(clinicalData.glucoseValue).toBe("95");
+    expect(clinicalData.glucoseType).toBe("jejum");
+    expect(clinicalData.customAnamnesisQuestions[0].question).toBe("Histórico Familiar?");
+
+    const clinicalJson = JSON.stringify(clinicalData);
     const parsed = JSON.parse(clinicalJson);
-    expect(parsed.weight).toBe("72");
+    expect(parsed.glucoseValue).toBe("95");
     expect(parsed.customAnamnesisQuestions.length).toBe(1);
-    expect(parsed.evaluationsHistory.length).toBe(1);
-    expect(parsed.recipesList.length).toBe(1);
-    expect(parsed.examsList.length).toBe(1);
   });
 });

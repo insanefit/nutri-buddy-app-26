@@ -1723,10 +1723,10 @@ const clinicalDataSchema = z.object({
   customAnamnesisQuestions: z
     .array(z.object({ id: z.string(), question: z.string(), answer: z.string() }))
     .optional(),
-  evaluationsHistory: z.array(z.unknown()).optional(),
-  recipesList: z.array(z.unknown()).optional(),
-  examsList: z.array(z.unknown()).optional(),
-  notesHistory: z.array(z.unknown()).optional(),
+  evaluationsHistory: z.array(z.record(z.any())).optional(),
+  recipesList: z.array(z.record(z.any())).optional(),
+  examsList: z.array(z.record(z.any())).optional(),
+  notesHistory: z.array(z.record(z.any())).optional(),
   clinicalNotes: z.string().optional(),
 });
 
@@ -1770,8 +1770,8 @@ export const updatePatientClinicalData = createServerFn({ method: "POST" })
       ...(data.leftThigh !== undefined && { leftThigh: data.leftThigh }),
       ...(data.bodyFat !== undefined && { bodyFat: data.bodyFat }),
       ...(data.systolicBP !== undefined && { systolicBP: data.systolicBP }),
-      ...(data.diastolicBP !== undefined && { diastolicBP: data.diastolicBP }),
-      ...(data.glucoseValue !== undefined && { glucoseType: data.glucoseType }),
+      ...(data.glucoseValue !== undefined && { glucoseValue: data.glucoseValue }),
+      ...(data.glucoseType !== undefined && { glucoseType: data.glucoseType }),
       ...(data.clinicalHistory !== undefined && { clinicalHistory: data.clinicalHistory }),
       ...(data.medications !== undefined && { medications: data.medications }),
       ...(data.allergies !== undefined && { allergies: data.allergies }),

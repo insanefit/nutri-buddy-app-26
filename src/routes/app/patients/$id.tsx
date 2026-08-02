@@ -316,39 +316,51 @@ function PatientDetailPage() {
       answer: newQuestionAnswer.trim(),
     };
     const updatedList = [...customAnamnesisQuestions, newQ];
-    setCustomAnamnesisQuestions(updatedList);
-    setNewQuestionTitle("");
-    setNewQuestionAnswer("");
-    setOpenNewQuestionDialog(false);
     try {
       await updatePatientClinicalData({
         data: {
           patient_id: id,
-          anamnesis: updatedList,
+          customAnamnesisQuestions: updatedList,
         },
       });
+      setCustomAnamnesisQuestions(updatedList);
+      setNewQuestionTitle("");
+      setNewQuestionAnswer("");
+      setOpenNewQuestionDialog(false);
       toast.success("Nova pergunta salva na Anamnese do banco!");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao salvar pergunta";
-      toast.error(`Pergunta adicionada localmente. Erro no banco: ${msg}`);
+      toast.error(`Falha ao salvar pergunta no banco: ${msg}`);
     }
   };
 
-  const handleUpdateQuestionTitle = (id: string, newTitle: string) => {
+  const handleUpdateQuestionTitle = (targetId: string, newTitle: string) => {
     setCustomAnamnesisQuestions(
-      customAnamnesisQuestions.map((q) => (q.id === id ? { ...q, question: newTitle } : q)),
+      customAnamnesisQuestions.map((q) => (q.id === targetId ? { ...q, question: newTitle } : q)),
     );
   };
 
-  const handleUpdateQuestionAnswer = (id: string, newAnswer: string) => {
+  const handleUpdateQuestionAnswer = (targetId: string, newAnswer: string) => {
     setCustomAnamnesisQuestions(
-      customAnamnesisQuestions.map((q) => (q.id === id ? { ...q, answer: newAnswer } : q)),
+      customAnamnesisQuestions.map((q) => (q.id === targetId ? { ...q, answer: newAnswer } : q)),
     );
   };
 
-  const handleDeleteQuestion = (id: string) => {
-    setCustomAnamnesisQuestions(customAnamnesisQuestions.filter((q) => q.id !== id));
-    toast.success("Pergunta removida da Anamnese.");
+  const handleDeleteQuestion = async (targetId: string) => {
+    const updatedList = customAnamnesisQuestions.filter((q) => q.id !== targetId);
+    try {
+      await updatePatientClinicalData({
+        data: {
+          patient_id: id,
+          customAnamnesisQuestions: updatedList,
+        },
+      });
+      setCustomAnamnesisQuestions(updatedList);
+      toast.success("Pergunta removida da Anamnese do banco!");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao remover pergunta";
+      toast.error(`Falha ao remover pergunta no banco: ${msg}`);
+    }
   };
 
   const handleSaveAnamnesis = async (e: React.FormEvent) => {
