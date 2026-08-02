@@ -281,7 +281,24 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      create_patient_with_consent: {
+        Args: {
+          p_full_name: string;
+          p_email: string | null;
+          p_phone: string | null;
+          p_category: string | null;
+          p_daily_calorie_goal: number | null;
+          p_notes: string | null;
+          p_lgpd_consent: boolean;
+        };
+        Returns: Json;
+      };
+      is_nutritionist: {
+        Args: {
+          lookup_id?: string;
+        };
+        Returns: boolean;
+      };
     };
     Enums: {
       app_role: "nutritionist" | "patient";

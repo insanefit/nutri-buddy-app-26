@@ -167,19 +167,31 @@ function PatientDetailPage() {
         if (obj.diastolicBP) setDiastolicBP(obj.diastolicBP);
         if (obj.glucoseValue) setGlucoseValue(obj.glucoseValue);
         if (obj.glucoseType) setGlucoseType(obj.glucoseType);
-        if (obj.clinicalNotes && typeof obj.clinicalNotes === "string") {
-          try {
-            if (obj.clinicalNotes.startsWith("[")) {
-              setNotesHistory(JSON.parse(obj.clinicalNotes));
-            } else {
-              setClinicalNotes(obj.clinicalNotes);
-            }
-          } catch {
-            setClinicalNotes(obj.clinicalNotes);
-          }
-        }
-        if (obj.anamnesis && Array.isArray(obj.anamnesis)) {
+        if (obj.clinicalHistory) setClinicalHistory(obj.clinicalHistory);
+        if (obj.medications) setMedications(obj.medications);
+        if (obj.allergies) setAllergies(obj.allergies);
+        if (obj.preferences) setPreferences(obj.preferences);
+        if (obj.aversions) setAversions(obj.aversions);
+        if (obj.physicalActivity) setPhysicalActivity(obj.physicalActivity);
+        if (obj.waterIntake) setWaterIntake(obj.waterIntake);
+        if (obj.bowelHabits) setBowelHabits(obj.bowelHabits);
+        if (obj.treatmentGoal) setTreatmentGoal(obj.treatmentGoal);
+        if (obj.customAnamnesisQuestions && Array.isArray(obj.customAnamnesisQuestions)) {
+          setCustomAnamnesisQuestions(obj.customAnamnesisQuestions);
+        } else if (obj.anamnesis && Array.isArray(obj.anamnesis)) {
           setCustomAnamnesisQuestions(obj.anamnesis);
+        }
+        if (obj.evaluationsHistory && Array.isArray(obj.evaluationsHistory)) {
+          setEvaluationsHistory(obj.evaluationsHistory);
+        }
+        if (obj.recipesList && Array.isArray(obj.recipesList)) {
+          setRecipesList(obj.recipesList);
+        }
+        if (obj.examsList && Array.isArray(obj.examsList)) {
+          setExamsList(obj.examsList);
+        }
+        if (obj.notesHistory && Array.isArray(obj.notesHistory)) {
+          setNotesHistory(obj.notesHistory);
         }
       }
     } catch (err) {
@@ -241,7 +253,7 @@ function PatientDetailPage() {
       rcq: rcqValue > 0 ? `${rcqValue}` : "Não informado",
       bodyFat: bodyFat ? `${bodyFat}%` : "Não informado",
     };
-    setEvaluationsHistory([newEval, ...evaluationsHistory]);
+    const updatedEval = [newEval, ...evaluationsHistory];
     try {
       await updatePatientClinicalData({
         data: {
@@ -261,12 +273,14 @@ function PatientDetailPage() {
           diastolicBP,
           glucoseValue,
           glucoseType,
+          evaluationsHistory: updatedEval,
         },
       });
+      setEvaluationsHistory(updatedEval);
       toast.success("Triagem de Sinais Vitais e Medidas salvas e registradas no prontuário!");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro de conexão";
-      toast.error(`Medidas salvas em sessão. Erro ao sincronizar com banco: ${msg}`);
+      toast.error(`Erro ao salvar no banco: ${msg}`);
     }
   };
 
@@ -337,41 +351,49 @@ function PatientDetailPage() {
     toast.success("Pergunta removida da Anamnese.");
   };
 
-  const handleSaveAnamnesis = (e: React.FormEvent) => {
+  const handleSaveAnamnesis = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Anamnese clínica e nutricional salva com sucesso no prontuário Sesc!");
+    try {
+      await updatePatientClinicalData({
+        data: {
+          patient_id: id,
+          clinicalHistory,
+          medications,
+          allergies,
+          preferences,
+          aversions,
+          physicalActivity,
+          waterIntake,
+          bowelHabits,
+          treatmentGoal,
+          customAnamnesisQuestions,
+        },
+      });
+      toast.success("Anamnese clínica e nutricional salva com sucesso no prontuário Sesc!");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao salvar anamnese";
+      toast.error(`Falha ao salvar anamnese: ${msg}`);
+    }
   };
 
-  // 3. Estados de Receitas & Guias Nutricionais
-  const [recipesList, setRecipesList] = useState([
-    {
-      id: "1",
-      title: "Suco Verde Antioxidante Sesc",
-      category: "Café da Manhã / Lanche",
-      ingredients:
-        "1 folha de couve manteiga, 1/2 maçã verde, 100ml de água de coco, suco de 1/2 limão, 1 colher de chá de gengibre ralado.",
-      preparation:
-        "Bater todos os ingredientes no liquidificador com gelo e servir sem coar para preservar as fibras.",
-      date: "28/05/2026",
-    },
-    {
-      id: "2",
-      title: "Omelete Proteico com Ervas e Queijo Branco",
-      category: "Café da Manhã / Jantar",
-      ingredients:
-        "2 ovos inteiros, 30g de queijo minas frescal, sementes de gergelim, orégano, salsinha e pitada de sal marinho.",
-      preparation:
-        "Bater os ovos com os temperos. Dourar em frigideira antiaderente untada com azeite de oliva e rechear com o queijo.",
-      date: "25/05/2026",
-    },
-  ]);
+  // 3. Estados de Receitas & Guias Nutricionais (iniciam limpos)
+  const [recipesList, setRecipesList] = useState<
+    Array<{
+      id: string;
+      title: string;
+      category: string;
+      ingredients: string;
+      preparation: string;
+      date: string;
+    }>
+  >([]);
   const [openRecipeDialog, setOpenRecipeDialog] = useState(false);
   const [recipeTitle, setRecipeTitle] = useState("");
   const [recipeCategory, setRecipeCategory] = useState("Café da Manhã");
   const [recipeIngredients, setRecipeIngredients] = useState("");
   const [recipePreparation, setRecipePreparation] = useState("");
 
-  const handleAddRecipe = (e: React.FormEvent) => {
+  const handleAddRecipe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!recipeTitle || !recipeIngredients) {
       toast.error("Preencha o título e os ingredientes da receita.");
@@ -385,62 +407,38 @@ function PatientDetailPage() {
       preparation: recipePreparation,
       date: format(new Date(), "dd/MM/yyyy"),
     };
-    setRecipesList([newRec, ...recipesList]);
-    setRecipeTitle("");
-    setRecipeIngredients("");
-    setRecipePreparation("");
-    setOpenRecipeDialog(false);
-    toast.success("Receita prescrita e adicionada ao prontuário!");
+    const updated = [newRec, ...recipesList];
+    try {
+      await updatePatientClinicalData({
+        data: {
+          patient_id: id,
+          recipesList: updated,
+        },
+      });
+      setRecipesList(updated);
+      setRecipeTitle("");
+      setRecipeIngredients("");
+      setRecipePreparation("");
+      setOpenRecipeDialog(false);
+      toast.success("Receita prescrita e salva no prontuário!");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao salvar receita";
+      toast.error(`Falha ao salvar receita: ${msg}`);
+    }
   };
 
-  // 4. Estados de Exames Laboratoriais
-  const [examsList, setExamsList] = useState([
-    {
-      id: "1",
-      name: "Glicemia de Jejum",
-      value: "89",
-      unit: "mg/dL",
-      reference: "70 a 99 mg/dL",
-      status: "Normal",
-      date: "10/05/2026",
-    },
-    {
-      id: "2",
-      name: "Hemoglobina Glicada (HbA1c)",
-      value: "5.4",
-      unit: "%",
-      reference: "Inferior a 5.7%",
-      status: "Normal",
-      date: "10/05/2026",
-    },
-    {
-      id: "3",
-      name: "Colesterol Total",
-      value: "195",
-      unit: "mg/dL",
-      reference: "Desejável < 190 mg/dL",
-      status: "Alterado",
-      date: "10/05/2026",
-    },
-    {
-      id: "4",
-      name: "Triglicerídeos",
-      value: "142",
-      unit: "mg/dL",
-      reference: "Desejável < 150 mg/dL",
-      status: "Normal",
-      date: "10/05/2026",
-    },
-    {
-      id: "5",
-      name: "Vitamina D (25-OH-D)",
-      value: "34",
-      unit: "ng/mL",
-      reference: "20 a 50 ng/mL",
-      status: "Normal",
-      date: "10/05/2026",
-    },
-  ]);
+  // 4. Estados de Exames Laboratoriais (iniciam limpos)
+  const [examsList, setExamsList] = useState<
+    Array<{
+      id: string;
+      name: string;
+      value: string;
+      unit: string;
+      reference: string;
+      status: "Normal" | "Alterado";
+      date: string;
+    }>
+  >([]);
   const [openExamDialog, setOpenExamDialog] = useState(false);
   const [examName, setExamName] = useState("");
   const [examValue, setExamValue] = useState("");
@@ -448,7 +446,7 @@ function PatientDetailPage() {
   const [examReference, setExamReference] = useState("");
   const [examStatus, setExamStatus] = useState<"Normal" | "Alterado">("Normal");
 
-  const handleAddExam = (e: React.FormEvent) => {
+  const handleAddExam = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!examName || !examValue) {
       toast.error("Preencha o nome e o resultado do exame.");
@@ -463,27 +461,36 @@ function PatientDetailPage() {
       status: examStatus,
       date: format(new Date(), "dd/MM/yyyy"),
     };
-    setExamsList([newEx, ...examsList]);
-    setExamName("");
-    setExamValue("");
-    setExamReference("");
-    setOpenExamDialog(false);
-    toast.success("Exame laboratorial registrado com sucesso!");
+    const updated = [newEx, ...examsList];
+    try {
+      await updatePatientClinicalData({
+        data: {
+          patient_id: id,
+          examsList: updated,
+        },
+      });
+      setExamsList(updated);
+      setExamName("");
+      setExamValue("");
+      setExamReference("");
+      setOpenExamDialog(false);
+      toast.success("Exame laboratorial registrado com sucesso!");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao salvar exame";
+      toast.error(`Falha ao salvar exame: ${msg}`);
+    }
   };
 
-  // 5. Estados de Anotações do Nutricionista
-  const [clinicalNotes, setClinicalNotes] = useState(
-    "Paciente demonstrou excelente adesão às recomendações da primeira consulta. Relata diminuição significativa do inchaço abdominal e melhora na disposição diária. Mantida a orientação de ingestão hídrica fracionada.",
-  );
-  const [notesHistory, setNotesHistory] = useState([
-    {
-      id: "1",
-      date: "15/05/2026",
-      content:
-        "Primeira consulta de avaliação nutricional realizada. Definido objetivo de reeducação e perda ponderal gradual.",
-      author: "Nutricionista Resp. Sesc",
-    },
-  ]);
+  // 5. Estados de Anotações do Nutricionista (iniciam limpos)
+  const [clinicalNotes, setClinicalNotes] = useState("");
+  const [notesHistory, setNotesHistory] = useState<
+    Array<{
+      id: string;
+      date: string;
+      content: string;
+      author: string;
+    }>
+  >([]);
 
   const handleSaveNotes = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -495,19 +502,19 @@ function PatientDetailPage() {
       author: "Nutricionista Resp. Sesc",
     };
     const updatedHistory = [newNote, ...notesHistory];
-    setNotesHistory(updatedHistory);
     try {
       await updatePatientClinicalData({
         data: {
           patient_id: id,
-          clinicalNotes: JSON.stringify(updatedHistory),
+          notesHistory: updatedHistory,
         },
       });
-      toast.success("Anotação de evolução clínica salva e registrada no prontuário!");
+      setNotesHistory(updatedHistory);
       setClinicalNotes("");
+      toast.success("Anotação de evolução clínica salva e registrada no prontuário!");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao salvar anotação";
-      toast.error(`Anotação salva localmente. Erro ao persistir no banco: ${msg}`);
+      toast.error(`Falha ao salvar anotação: ${msg}`);
     }
   };
 

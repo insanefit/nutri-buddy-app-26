@@ -1,53 +1,62 @@
 -- Migration: 20260801230000_redesign_patient_schema.sql
 
--- 1. Tabela patients com dados demograficos proprios (Sem perfis falsos em profiles)
-CREATE TABLE IF NOT EXISTS public.patients_new (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  nutritionist_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  patient_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
-  full_name text NOT NULL,
-  email text,
-  phone text,
-  category text NOT NULL DEFAULT 'comerciario',
-  daily_calorie_goal integer DEFAULT 2000,
-  notes text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
+-- 1. Helper SECURITY DEFINER para checar perfil de nutricionista sem recursão em RLS
+CREATE OR REPLACE FUNCTION public.is_nutritionist(lookup_id uuid DEFAULT auth.uid())
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = lookup_id AND role = 'nutritionist'
+  );
+$$;
 
--- Copiar dados legados se existirem
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'patients') THEN
-    INSERT INTO public.patients_new (id, nutritionist_id, patient_user_id, full_name, email, phone, category, daily_calorie_goal, notes, created_at, updated_at)
-    SELECT 
-      p.id,
-      p.nutritionist_id,
-      CASE WHEN pr.id IS NOT NULL AND pr.role = 'patient' THEN pr.id ELSE NULL END as patient_user_id,
-      COALESCE(pr.full_name, 'Paciente Sesc'),
-      NULL as email,
-      NULL as phone,
-      'comerciario' as category,
-      COALESCE(p.daily_calorie_goal, 2000),
-      p.notes,
-      p.created_at,
-      p.updated_at
-    FROM public.patients p
-    LEFT JOIN public.profiles pr ON pr.id = p.patient_id;
-  END IF;
-END $$;
+GRANT EXECUTE ON FUNCTION public.is_nutritionist TO authenticated;
 
--- Ajustar FKs em meals para aponta para public.patients_new(id)
-ALTER TABLE public.meals DROP CONSTRAINT IF EXISTS meals_patient_id_fkey;
+-- 2. Limpar perfis falsos e restaurar a FK profiles.id -> auth.users.id
+DELETE FROM public.profiles
+WHERE id NOT IN (SELECT id FROM auth.users);
 
-DROP TABLE IF EXISTS public.patients CASCADE;
-ALTER TABLE public.patients_new RENAME TO patients;
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
+ALTER TABLE public.profiles
+  ADD CONSTRAINT profiles_id_fkey
+  FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
-ALTER TABLE public.meals 
-  ADD CONSTRAINT meals_patient_id_fkey 
-  FOREIGN KEY (patient_id) REFERENCES public.patients(id) ON DELETE CASCADE;
+-- 3. Alteração segura e não-destrutiva da tabela patients
+ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS full_name text;
+ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS email text;
+ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS phone text;
+ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS category text DEFAULT 'comerciario';
+ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS patient_user_id uuid;
 
--- 2. Tabela de Consentimentos LGPD Auditavel
+-- Preencher full_name para registros existentes se necessário
+UPDATE public.patients p
+SET full_name = COALESCE(
+  p.full_name,
+  (SELECT pr.full_name FROM public.profiles pr WHERE pr.id = p.patient_id),
+  'Paciente Sesc'
+)
+WHERE p.full_name IS NULL OR p.full_name = '';
+
+ALTER TABLE public.patients ALTER COLUMN full_name SET NOT NULL;
+
+-- Associar patient_user_id apenas para IDs reais em auth.users
+UPDATE public.patients p
+SET patient_user_id = p.patient_id
+WHERE EXISTS (SELECT 1 FROM auth.users u WHERE u.id = p.patient_id);
+
+ALTER TABLE public.patients DROP CONSTRAINT IF EXISTS patients_patient_id_fkey;
+ALTER TABLE public.patients DROP COLUMN IF EXISTS patient_id;
+
+ALTER TABLE public.patients DROP CONSTRAINT IF EXISTS patients_patient_user_id_fkey;
+ALTER TABLE public.patients
+  ADD CONSTRAINT patients_patient_user_id_fkey
+  FOREIGN KEY (patient_user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+-- 4. Tabela lgpd_consents
 CREATE TABLE IF NOT EXISTS public.lgpd_consents (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id uuid NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
@@ -59,23 +68,78 @@ CREATE TABLE IF NOT EXISTS public.lgpd_consents (
 
 GRANT SELECT, INSERT ON public.lgpd_consents TO authenticated;
 GRANT ALL ON public.lgpd_consents TO service_role;
-
 ALTER TABLE public.lgpd_consents ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Nutritionists can manage LGPD consents" ON public.lgpd_consents;
-CREATE POLICY "Nutritionists can manage LGPD consents"
-  ON public.lgpd_consents FOR ALL
-  TO authenticated
-  USING (
-    nutritionist_id = auth.uid()
-    AND EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'nutritionist')
-  )
-  WITH CHECK (
-    nutritionist_id = auth.uid()
-    AND EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'nutritionist')
+-- 5. RPC Transacional para cadastrar paciente + consentimento LGPD em transação atômica
+CREATE OR REPLACE FUNCTION public.create_patient_with_consent(
+  p_full_name text,
+  p_email text,
+  p_phone text,
+  p_category text,
+  p_daily_calorie_goal integer,
+  p_notes text,
+  p_lgpd_consent boolean
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_nutritionist_id uuid := auth.uid();
+  v_patient_id uuid;
+  v_result jsonb;
+BEGIN
+  IF v_nutritionist_id IS NULL THEN
+    RAISE EXCEPTION 'Unauthorized: Usuário não autenticado.';
+  END IF;
+
+  IF NOT public.is_nutritionist(v_nutritionist_id) THEN
+    RAISE EXCEPTION 'Forbidden: Apenas nutricionistas credenciados podem cadastrar pacientes.';
+  END IF;
+
+  IF NOT COALESCE(p_lgpd_consent, false) THEN
+    RAISE EXCEPTION 'É obrigatório aceitar o termo LGPD para realizar o cadastro.';
+  END IF;
+
+  INSERT INTO public.patients (
+    nutritionist_id,
+    full_name,
+    email,
+    phone,
+    category,
+    daily_calorie_goal,
+    notes
+  ) VALUES (
+    v_nutritionist_id,
+    p_full_name,
+    p_email,
+    p_phone,
+    COALESCE(p_category, 'comerciario'),
+    COALESCE(p_daily_calorie_goal, 2000),
+    p_notes
+  ) RETURNING id INTO v_patient_id;
+
+  INSERT INTO public.lgpd_consents (
+    patient_id,
+    nutritionist_id,
+    consent_given,
+    consent_version
+  ) VALUES (
+    v_patient_id,
+    v_nutritionist_id,
+    true,
+    'v1.0-2026'
   );
 
--- 3. Protecao da Coluna role na Tabela profiles
+  SELECT row_to_json(p)::jsonb INTO v_result FROM public.patients p WHERE p.id = v_patient_id;
+  RETURN v_result;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.create_patient_with_consent TO authenticated;
+
+-- 6. Trigger para impedir alteração manual da coluna role em profiles por usuários comuns
 CREATE OR REPLACE FUNCTION public.prevent_profile_role_change()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -96,7 +160,7 @@ CREATE TRIGGER tr_prevent_profile_role_change
   FOR EACH ROW
   EXECUTE FUNCTION public.prevent_profile_role_change();
 
--- Auto-cadastro publico produz exclusivamente 'patient'
+-- 7. Trigger para garantir que auto-cadastro público cria apenas 'patient'
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -117,43 +181,31 @@ BEGIN
 END;
 $$;
 
--- 4. RLS Reforçado para Profiles, Patients, Meals e Meal_Items
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.patients TO authenticated;
-GRANT ALL ON public.patients TO service_role;
-ALTER TABLE public.patients ENABLE ROW LEVEL SECURITY;
-
+-- 8. Políticas RLS Sem Recursão Infinita
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can read profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Users can read own profile" ON public.profiles;
-DROP POLICY IF EXISTS "Authenticated users can insert profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Users can read relevant profiles" ON public.profiles;
 
 CREATE POLICY "Users can read relevant profiles"
   ON public.profiles FOR SELECT
   TO authenticated
   USING (
-    id = auth.uid() OR
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'nutritionist')
+    id = auth.uid() OR public.is_nutritionist(auth.uid())
   );
 
-CREATE POLICY "Users can update own profile fields"
-  ON public.profiles FOR UPDATE
-  TO authenticated
-  USING (id = auth.uid())
-  WITH CHECK (id = auth.uid());
-
--- RLS Patients
+ALTER TABLE public.patients ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Nutritionists can manage their patients" ON public.patients;
-DROP POLICY IF EXISTS "Patients can read their own patient records" ON public.patients;
+DROP POLICY IF EXISTS "Patients can read own record" ON public.patients;
 
 CREATE POLICY "Nutritionists can manage their patients"
   ON public.patients FOR ALL
   TO authenticated
   USING (
-    nutritionist_id = auth.uid()
-    AND EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'nutritionist')
+    nutritionist_id = auth.uid() AND public.is_nutritionist(auth.uid())
   )
   WITH CHECK (
-    nutritionist_id = auth.uid()
-    AND EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'nutritionist')
+    nutritionist_id = auth.uid() AND public.is_nutritionist(auth.uid())
   );
 
 CREATE POLICY "Patients can read own record"
@@ -161,21 +213,18 @@ CREATE POLICY "Patients can read own record"
   TO authenticated
   USING (patient_user_id = auth.uid());
 
--- RLS Meals
 ALTER TABLE public.meals ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Nutritionists can manage meals of their patients" ON public.meals;
-DROP POLICY IF EXISTS "Patients can read their own meals" ON public.meals;
+DROP POLICY IF EXISTS "Nutritionists can manage meals" ON public.meals;
+DROP POLICY IF EXISTS "Patients can read own meals" ON public.meals;
 
 CREATE POLICY "Nutritionists can manage meals"
   ON public.meals FOR ALL
   TO authenticated
   USING (
-    nutritionist_id = auth.uid()
-    AND EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'nutritionist')
+    nutritionist_id = auth.uid() AND public.is_nutritionist(auth.uid())
   )
   WITH CHECK (
-    nutritionist_id = auth.uid()
-    AND EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'nutritionist')
+    nutritionist_id = auth.uid() AND public.is_nutritionist(auth.uid())
   );
 
 CREATE POLICY "Patients can read own meals"
@@ -188,60 +237,13 @@ CREATE POLICY "Patients can read own meals"
     )
   );
 
--- RLS Meal Items
-ALTER TABLE public.meal_items ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Authenticated users can select meal_items" ON public.meal_items;
-DROP POLICY IF EXISTS "Nutritionists can insert meal_items" ON public.meal_items;
-DROP POLICY IF EXISTS "Nutritionists can update meal_items" ON public.meal_items;
-DROP POLICY IF EXISTS "Nutritionists can delete meal_items" ON public.meal_items;
-
-CREATE POLICY "Authenticated users can select meal_items"
-  ON public.meal_items FOR SELECT
+DROP POLICY IF EXISTS "Nutritionists can manage LGPD consents" ON public.lgpd_consents;
+CREATE POLICY "Nutritionists can manage LGPD consents"
+  ON public.lgpd_consents FOR ALL
   TO authenticated
   USING (
-    EXISTS (
-      SELECT 1 FROM public.meals m
-      JOIN public.patients p ON p.id = m.patient_id
-      WHERE m.id = meal_items.meal_id
-        AND (p.nutritionist_id = auth.uid() OR p.patient_user_id = auth.uid())
-    )
-  );
-
-CREATE POLICY "Nutritionists can insert meal_items"
-  ON public.meal_items FOR INSERT
-  TO authenticated
+    nutritionist_id = auth.uid() AND public.is_nutritionist(auth.uid())
+  )
   WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.meals m
-      JOIN public.profiles pr ON pr.id = auth.uid()
-      WHERE m.id = meal_items.meal_id
-        AND m.nutritionist_id = auth.uid()
-        AND pr.role = 'nutritionist'
-    )
-  );
-
-CREATE POLICY "Nutritionists can update meal_items"
-  ON public.meal_items FOR UPDATE
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.meals m
-      JOIN public.profiles pr ON pr.id = auth.uid()
-      WHERE m.id = meal_items.meal_id
-        AND m.nutritionist_id = auth.uid()
-        AND pr.role = 'nutritionist'
-    )
-  );
-
-CREATE POLICY "Nutritionists can delete meal_items"
-  ON public.meal_items FOR DELETE
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.meals m
-      JOIN public.profiles pr ON pr.id = auth.uid()
-      WHERE m.id = meal_items.meal_id
-        AND m.nutritionist_id = auth.uid()
-        AND pr.role = 'nutritionist'
-    )
+    nutritionist_id = auth.uid() AND public.is_nutritionist(auth.uid())
   );

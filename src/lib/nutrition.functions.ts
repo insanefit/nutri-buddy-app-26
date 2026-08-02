@@ -86,39 +86,25 @@ export const createPatient = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => patientSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const user = await requireNutritionistUser(context);
-    const nutritionistId = user.id;
+    await requireNutritionistUser(context);
 
-    // Inserir registro demográfico do paciente diretamente em patients (sem perfil falso em profiles)
-    const { data: insertedPatient, error: patientErr } = await context.supabase
-      .from("patients")
-      .insert({
-        nutritionist_id: nutritionistId,
-        full_name: data.full_name,
-        email: data.patient_email || null,
-        phone: data.phone || null,
-        category: data.category || "comerciario",
-        daily_calorie_goal: data.daily_calorie_goal || 2000,
-        notes: data.notes || "",
-      })
-      .select()
-      .single();
+    // Invocação da RPC transacional atômica
+    const { data: insertedPatient, error } = await context.supabase.rpc(
+      "create_patient_with_consent",
+      {
+        p_full_name: data.full_name,
+        p_email: data.patient_email || null,
+        p_phone: data.phone || null,
+        p_category: data.category || "comerciario",
+        p_daily_calorie_goal: data.daily_calorie_goal || 2000,
+        p_notes: data.notes || "",
+        p_lgpd_consent: data.lgpd_consent,
+      },
+    );
 
-    if (patientErr || !insertedPatient) {
-      console.error("[createPatient] Error inserting patient:", patientErr?.message);
-      throw new Error(`Falha ao cadastrar paciente no banco de dados: ${patientErr?.message}`);
-    }
-
-    // Registrar consentimento LGPD em tabela própria auditável
-    const { error: lgpdErr } = await context.supabase.from("lgpd_consents").insert({
-      patient_id: insertedPatient.id,
-      nutritionist_id: nutritionistId,
-      consent_given: true,
-      consent_version: "v1.0-2026",
-    });
-
-    if (lgpdErr) {
-      console.error("[createPatient] Error recording LGPD consent:", lgpdErr.message);
+    if (error || !insertedPatient) {
+      console.error("[createPatient] Transação RPC falhou:", error?.message);
+      throw new Error(`Falha ao cadastrar paciente (Transação LGPD): ${error?.message}`);
     }
 
     return insertedPatient;
@@ -1725,9 +1711,22 @@ const clinicalDataSchema = z.object({
   diastolicBP: z.string().optional(),
   glucoseValue: z.string().optional(),
   glucoseType: z.enum(["jejum", "casual"]).optional(),
-  anamnesis: z
+  clinicalHistory: z.string().optional(),
+  medications: z.string().optional(),
+  allergies: z.string().optional(),
+  preferences: z.string().optional(),
+  aversions: z.string().optional(),
+  physicalActivity: z.string().optional(),
+  waterIntake: z.string().optional(),
+  bowelHabits: z.string().optional(),
+  treatmentGoal: z.string().optional(),
+  customAnamnesisQuestions: z
     .array(z.object({ id: z.string(), question: z.string(), answer: z.string() }))
     .optional(),
+  evaluationsHistory: z.array(z.unknown()).optional(),
+  recipesList: z.array(z.unknown()).optional(),
+  examsList: z.array(z.unknown()).optional(),
+  notesHistory: z.array(z.unknown()).optional(),
   clinicalNotes: z.string().optional(),
 });
 
@@ -1772,9 +1771,23 @@ export const updatePatientClinicalData = createServerFn({ method: "POST" })
       ...(data.bodyFat !== undefined && { bodyFat: data.bodyFat }),
       ...(data.systolicBP !== undefined && { systolicBP: data.systolicBP }),
       ...(data.diastolicBP !== undefined && { diastolicBP: data.diastolicBP }),
-      ...(data.glucoseValue !== undefined && { glucoseValue: data.glucoseValue }),
-      ...(data.glucoseType !== undefined && { glucoseType: data.glucoseType }),
-      ...(data.anamnesis !== undefined && { anamnesis: data.anamnesis }),
+      ...(data.glucoseValue !== undefined && { glucoseType: data.glucoseType }),
+      ...(data.clinicalHistory !== undefined && { clinicalHistory: data.clinicalHistory }),
+      ...(data.medications !== undefined && { medications: data.medications }),
+      ...(data.allergies !== undefined && { allergies: data.allergies }),
+      ...(data.preferences !== undefined && { preferences: data.preferences }),
+      ...(data.aversions !== undefined && { aversions: data.aversions }),
+      ...(data.physicalActivity !== undefined && { physicalActivity: data.physicalActivity }),
+      ...(data.waterIntake !== undefined && { waterIntake: data.waterIntake }),
+      ...(data.bowelHabits !== undefined && { bowelHabits: data.bowelHabits }),
+      ...(data.treatmentGoal !== undefined && { treatmentGoal: data.treatmentGoal }),
+      ...(data.customAnamnesisQuestions !== undefined && {
+        customAnamnesisQuestions: data.customAnamnesisQuestions,
+      }),
+      ...(data.evaluationsHistory !== undefined && { evaluationsHistory: data.evaluationsHistory }),
+      ...(data.recipesList !== undefined && { recipesList: data.recipesList }),
+      ...(data.examsList !== undefined && { examsList: data.examsList }),
+      ...(data.notesHistory !== undefined && { notesHistory: data.notesHistory }),
       ...(data.clinicalNotes !== undefined && { clinicalNotes: data.clinicalNotes }),
       updated_at: new Date().toISOString(),
     };

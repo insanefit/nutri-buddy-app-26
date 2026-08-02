@@ -55,11 +55,10 @@ function AuthPage() {
         });
         if (error) throw error;
         if (data.user) {
-          // Salva perfil inicial
+          // Salva perfil inicial (role e gerenciado pela trigger handle_new_user)
           await supabase.from("profiles").upsert({
             id: data.user.id,
             full_name: fullName || cleanEmail.split("@")[0],
-            role: "nutritionist",
           });
         }
         toast.success("Conta cadastrada! Verifique seu e-mail corporativo para confirmar.");
