@@ -1,6 +1,10 @@
 -- Migration: 20260802010000_structural_patients_rbac_rpc_fix.sql
 
--- 1. Helper SECURITY DEFINER para verificar se o usuario autenticado e nutricionista (sem recursao em RLS)
+-- 1. Limpar assinaturas legadas de is_nutritionist
+DROP FUNCTION IF EXISTS public.is_nutritionist(uuid);
+DROP FUNCTION IF EXISTS public.is_nutritionist();
+
+-- Helper SECURITY DEFINER para verificar se o usuario autenticado e nutricionista (sem recursao em RLS)
 CREATE OR REPLACE FUNCTION public.is_nutritionist()
 RETURNS boolean
 LANGUAGE sql
@@ -10,7 +14,7 @@ SET search_path = ''
 AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND role = 'nutritionist'
+    WHERE id = auth.uid() AND role = 'nutritionist'::public.app_role
   );
 $$;
 
@@ -25,20 +29,29 @@ ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS category text DEFAULT 'come
 ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS patient_user_id uuid;
 
 -- 3. Preencher full_name dos pacientes legados ANTES de deletar perfis ficticios
-UPDATE public.patients p
-SET full_name = COALESCE(
-  p.full_name,
-  (SELECT pr.full_name FROM public.profiles pr WHERE pr.id = p.patient_id),
-  (CASE WHEN p.notes LIKE '%|%' THEN split_part(p.notes, '|', 1) ELSE 'Paciente Sesc' END)
-)
-WHERE p.full_name IS NULL OR p.full_name = '';
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name='patients' AND column_name='patient_id'
+  ) THEN
+    UPDATE public.patients p
+    SET full_name = COALESCE(
+      p.full_name,
+      (SELECT pr.full_name FROM public.profiles pr WHERE pr.id = p.patient_id),
+      (CASE WHEN p.notes LIKE '%|%' THEN split_part(p.notes, '|', 1) ELSE 'Paciente Sesc' END)
+    )
+    WHERE p.full_name IS NULL OR p.full_name = '';
 
+    -- Preencher patient_user_id apenas para IDs reais em auth.users
+    UPDATE public.patients p
+    SET patient_user_id = p.patient_id
+    WHERE EXISTS (SELECT 1 FROM auth.users u WHERE u.id = p.patient_id);
+  END IF;
+END $$;
+
+UPDATE public.patients SET full_name = 'Paciente Sesc' WHERE full_name IS NULL OR full_name = '';
 ALTER TABLE public.patients ALTER COLUMN full_name SET NOT NULL;
-
--- Preencher patient_user_id apenas para IDs reais em auth.users
-UPDATE public.patients p
-SET patient_user_id = p.patient_id
-WHERE EXISTS (SELECT 1 FROM auth.users u WHERE u.id = p.patient_id);
 
 -- 4. Limpar perfis ficticios (que nao estao em auth.users) e restaurar FK profiles.id -> auth.users.id
 DELETE FROM public.profiles
@@ -71,7 +84,7 @@ DROP POLICY IF EXISTS "Nutritionists can insert meal_items" ON public.meal_items
 DROP POLICY IF EXISTS "Nutritionists can update meal_items" ON public.meal_items;
 DROP POLICY IF EXISTS "Nutritionists can delete meal_items" ON public.meal_items;
 
--- Agora e seguro remover a coluna legada patient_id
+-- Agora e seguro remover a coluna legada patient_id se ela existir
 ALTER TABLE public.patients DROP CONSTRAINT IF EXISTS patients_patient_id_fkey;
 ALTER TABLE public.patients DROP COLUMN IF EXISTS patient_id;
 
@@ -219,7 +232,7 @@ CREATE POLICY "Users can insert own profile as patient"
   ON public.profiles FOR INSERT
   TO authenticated
   WITH CHECK (
-    id = auth.uid() AND (role = 'patient'::public.app_role OR role IS NULL)
+    id = auth.uid() AND (role = 'patient' OR role IS NULL)
   );
 
 CREATE POLICY "Users can update own profile fields"
