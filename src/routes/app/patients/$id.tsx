@@ -368,38 +368,16 @@ function PatientDetailPage() {
     }
   };
 
-  const handleUpdateQuestionTitle = async (targetId: string, newTitle: string) => {
-    const updatedList = customAnamnesisQuestions.map((q) =>
-      q.id === targetId ? { ...q, question: newTitle } : q,
+  const handleUpdateQuestionTitle = (targetId: string, newTitle: string) => {
+    setCustomAnamnesisQuestions((prev) =>
+      prev.map((q) => (q.id === targetId ? { ...q, question: newTitle } : q)),
     );
-    setCustomAnamnesisQuestions(updatedList);
-    try {
-      await updatePatientClinicalData({
-        data: {
-          patient_id: id,
-          customAnamnesisQuestions: updatedList,
-        },
-      });
-    } catch {
-      // Auto-save no background
-    }
   };
 
-  const handleUpdateQuestionAnswer = async (targetId: string, newAnswer: string) => {
-    const updatedList = customAnamnesisQuestions.map((q) =>
-      q.id === targetId ? { ...q, answer: newAnswer } : q,
+  const handleUpdateQuestionAnswer = (targetId: string, newAnswer: string) => {
+    setCustomAnamnesisQuestions((prev) =>
+      prev.map((q) => (q.id === targetId ? { ...q, answer: newAnswer } : q)),
     );
-    setCustomAnamnesisQuestions(updatedList);
-    try {
-      await updatePatientClinicalData({
-        data: {
-          patient_id: id,
-          customAnamnesisQuestions: updatedList,
-        },
-      });
-    } catch {
-      // Auto-save no background
-    }
   };
 
   const handleDeleteQuestion = async (targetId: string) => {
@@ -807,9 +785,9 @@ function PatientDetailPage() {
                       CATEGORIA INSTITUCIONAL:
                     </span>
                     <span className="text-[#003366] font-extrabold">
-                      {patient?.notes?.toLowerCase().includes("dependente")
+                      {patient?.category === "dependente"
                         ? "Dependente de Comerciário"
-                        : patient?.notes?.toLowerCase().includes("público geral")
+                        : patient?.category === "publico_geral"
                           ? "Público Geral"
                           : "Comerciário (Trabalhador do Comércio)"}
                     </span>
@@ -964,9 +942,9 @@ function PatientDetailPage() {
                   <div>
                     <span className="font-bold text-slate-600 block">CATEGORIA SESC:</span>
                     <span className="text-[#003366] font-bold">
-                      {patient?.notes?.toLowerCase().includes("dependente")
+                      {patient?.category === "dependente"
                         ? "Dependente de Comerciário"
-                        : patient?.notes?.toLowerCase().includes("público geral")
+                        : patient?.category === "publico_geral"
                           ? "Público Geral"
                           : "Comerciário (Trabalhador do Comércio)"}
                     </span>
@@ -978,7 +956,9 @@ function PatientDetailPage() {
                   <div>
                     <span className="font-bold text-slate-600 block">PESO / ALTURA / IMC:</span>
                     <span className="text-slate-900 font-medium">
-                      {weight} kg | {height} cm (IMC: {imcValue} - {imcClass?.text})
+                      {weight && height
+                        ? `${weight} kg | ${height} cm (IMC: ${imcValue}${imcClass ? ` - ${imcClass.text}` : ""})`
+                        : "Não informado"}
                     </span>
                   </div>
                   <div>

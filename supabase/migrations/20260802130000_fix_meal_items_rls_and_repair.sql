@@ -126,3 +126,15 @@ CREATE POLICY "Patients can read own meal_items"
       WHERE m.id = meal_items.meal_id AND p.patient_user_id = auth.uid()
     )
   );
+
+-- 5. Registrar historico de migrações na tabela oficial do Supabase
+CREATE SCHEMA IF NOT EXISTS supabase_migrations;
+CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations (
+  version text PRIMARY KEY,
+  statements text[],
+  name text
+);
+
+INSERT INTO supabase_migrations.schema_migrations (version, name)
+VALUES ('20260802130000', '20260802130000_fix_meal_items_rls_and_repair.sql')
+ON CONFLICT (version) DO NOTHING;

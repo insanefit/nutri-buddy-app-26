@@ -16,7 +16,39 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.is_nutritionist TO authenticated;
 
--- 2. Limpar perfis falsos e restaurar a FK profiles.id -> auth.users.id
+-- 2. Alteração segura e não-destrutiva da tabela patients (adicionar colunas primeiro)
+ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS full_name text;
+ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS email text;
+ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS phone text;
+ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS category text DEFAULT 'comerciario';
+ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS patient_user_id uuid;
+
+-- Preencher full_name a partir de profiles.full_name ANTES de apagar perfis fictícios
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema='public' AND table_name='patients' AND column_name='patient_id'
+  ) THEN
+    UPDATE public.patients p
+    SET full_name = COALESCE(
+      p.full_name,
+      (SELECT pr.full_name FROM public.profiles pr WHERE pr.id = p.patient_id),
+      (CASE WHEN p.notes LIKE '%|%' THEN split_part(p.notes, '|', 1) ELSE 'Paciente Sesc' END)
+    )
+    WHERE p.full_name IS NULL OR p.full_name = '';
+
+    -- Associar patient_user_id apenas para IDs reais em auth.users
+    UPDATE public.patients p
+    SET patient_user_id = p.patient_id
+    WHERE EXISTS (SELECT 1 FROM auth.users u WHERE u.id = p.patient_id);
+  END IF;
+END $$;
+
+UPDATE public.patients SET full_name = 'Paciente Sesc' WHERE full_name IS NULL OR full_name = '';
+ALTER TABLE public.patients ALTER COLUMN full_name SET NOT NULL;
+
+-- 3. Limpar perfis fictícios (que não estão em auth.users) SOMENTE APÓS preservar os nomes
 DELETE FROM public.profiles
 WHERE id NOT IN (SELECT id FROM auth.users);
 
@@ -24,29 +56,6 @@ ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
 ALTER TABLE public.profiles
   ADD CONSTRAINT profiles_id_fkey
   FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
-
--- 3. Alteração segura e não-destrutiva da tabela patients
-ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS full_name text;
-ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS email text;
-ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS phone text;
-ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS category text DEFAULT 'comerciario';
-ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS patient_user_id uuid;
-
--- Preencher full_name para registros existentes se necessário
-UPDATE public.patients p
-SET full_name = COALESCE(
-  p.full_name,
-  (SELECT pr.full_name FROM public.profiles pr WHERE pr.id = p.patient_id),
-  'Paciente Sesc'
-)
-WHERE p.full_name IS NULL OR p.full_name = '';
-
-ALTER TABLE public.patients ALTER COLUMN full_name SET NOT NULL;
-
--- Associar patient_user_id apenas para IDs reais em auth.users
-UPDATE public.patients p
-SET patient_user_id = p.patient_id
-WHERE EXISTS (SELECT 1 FROM auth.users u WHERE u.id = p.patient_id);
 
 DROP POLICY IF EXISTS "Patients can read their own patient records" ON public.patients;
 DROP POLICY IF EXISTS "Patients can read own record" ON public.patients;

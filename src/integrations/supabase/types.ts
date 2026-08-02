@@ -209,7 +209,7 @@ export type Database = {
             foreignKeyName: "patients_patient_user_id_fkey";
             columns: ["patient_user_id"];
             isOneToOne: false;
-            referencedRelation: "profiles";
+            referencedRelation: "users";
             referencedColumns: ["id"];
           },
         ];
