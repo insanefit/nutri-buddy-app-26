@@ -23,7 +23,7 @@ ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS phone text;
 ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS category text DEFAULT 'comerciario';
 ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS patient_user_id uuid;
 
--- Preencher full_name a partir de profiles.full_name ANTES de apagar perfis fictícios
+-- Preencher full_name, email, phone, category a partir de profiles/notes legados ANTES de apagar perfis fictícios
 DO $$
 BEGIN
   IF EXISTS (
@@ -31,17 +31,52 @@ BEGIN
     WHERE table_schema='public' AND table_name='patients' AND column_name='patient_id'
   ) THEN
     UPDATE public.patients p
-    SET full_name = COALESCE(
-      p.full_name,
-      (SELECT pr.full_name FROM public.profiles pr WHERE pr.id = p.patient_id),
-      (CASE WHEN p.notes LIKE '%|%' THEN split_part(p.notes, '|', 1) ELSE 'Paciente Sesc' END)
-    )
-    WHERE p.full_name IS NULL OR p.full_name = '';
+    SET
+      full_name = COALESCE(
+        NULLIF(p.full_name, ''),
+        (SELECT pr.full_name FROM public.profiles pr WHERE pr.id = p.patient_id),
+        (CASE WHEN p.notes LIKE '%|%' THEN split_part(p.notes, '|', 1) ELSE 'Paciente Sesc' END)
+      ),
+      email = COALESCE(
+        NULLIF(p.email, ''),
+        (CASE
+          WHEN p.notes LIKE '%@%' AND p.notes LIKE '%|%' THEN split_part(p.notes, '|', 2)
+          WHEN p.notes LIKE '%@%' THEN substring(p.notes from '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}')
+          ELSE NULL
+        END)
+      ),
+      phone = COALESCE(
+        NULLIF(p.phone, ''),
+        (CASE
+          WHEN p.notes LIKE '%|%' AND array_length(string_to_array(p.notes, '|'), 1) >= 3 THEN split_part(p.notes, '|', 3)
+          ELSE NULL
+        END)
+      ),
+      category = COALESCE(
+        NULLIF(p.category, ''),
+        (CASE
+          WHEN lower(p.notes) LIKE '%dependente%' THEN 'dependente'
+          WHEN lower(p.notes) LIKE '%público geral%' OR lower(p.notes) LIKE '%publico_geral%' THEN 'publico_geral'
+          ELSE 'comerciario'
+        END)
+      );
 
     -- Associar patient_user_id apenas para IDs reais em auth.users
     UPDATE public.patients p
     SET patient_user_id = p.patient_id
     WHERE EXISTS (SELECT 1 FROM auth.users u WHERE u.id = p.patient_id);
+  ELSE
+    UPDATE public.patients p
+    SET
+      full_name = COALESCE(NULLIF(p.full_name, ''), 'Paciente Sesc'),
+      category = COALESCE(
+        NULLIF(p.category, ''),
+        (CASE
+          WHEN lower(p.notes) LIKE '%dependente%' THEN 'dependente'
+          WHEN lower(p.notes) LIKE '%público geral%' OR lower(p.notes) LIKE '%publico_geral%' THEN 'publico_geral'
+          ELSE 'comerciario'
+        END)
+      );
   END IF;
 END $$;
 
@@ -81,6 +116,14 @@ CREATE TABLE IF NOT EXISTS public.lgpd_consents (
   consent_given boolean NOT NULL DEFAULT true,
   consent_version text NOT NULL DEFAULT 'v1.0-2026',
   created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Migrar consentimentos legados de pacientes para lgpd_consents
+INSERT INTO public.lgpd_consents (patient_id, nutritionist_id, consent_given, consent_version)
+SELECT p.id, p.nutritionist_id, true, 'v1.0-legacy'
+FROM public.patients p
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.lgpd_consents c WHERE c.patient_id = p.id
 );
 
 GRANT SELECT, INSERT ON public.lgpd_consents TO authenticated;
