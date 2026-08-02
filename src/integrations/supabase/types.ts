@@ -294,9 +294,7 @@ export type Database = {
         Returns: Json;
       };
       is_nutritionist: {
-        Args: {
-          lookup_id?: string;
-        };
+        Args: Record<PropertyKey, never>;
         Returns: boolean;
       };
     };

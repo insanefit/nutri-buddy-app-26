@@ -148,6 +148,37 @@ function PatientDetailPage() {
 
   // Restaurar e hidratar os dados reais salvos no banco Supabase ao carregar
   useEffect(() => {
+    // Resetar estado local para evitar vazamento entre pacientes
+    setWeight("");
+    setHeight("");
+    setWaist("");
+    setHip("");
+    setAbdomen("");
+    setChest("");
+    setRightArm("");
+    setLeftArm("");
+    setRightThigh("");
+    setLeftThigh("");
+    setBodyFat("");
+    setSystolicBP("");
+    setDiastolicBP("");
+    setGlucoseValue("");
+    setGlucoseType("jejum");
+    setClinicalHistory("");
+    setMedications("");
+    setAllergies("");
+    setPreferences("");
+    setAversions("");
+    setPhysicalActivity("");
+    setWaterIntake("");
+    setBowelHabits("");
+    setTreatmentGoal("");
+    setCustomAnamnesisQuestions([]);
+    setEvaluationsHistory([]);
+    setRecipesList([]);
+    setExamsList([]);
+    setNotesHistory([]);
+
     if (!patient?.notes) return;
     try {
       if (patient.notes.startsWith("{")) {
@@ -230,10 +261,13 @@ function PatientDetailPage() {
 
   const numSystolic = Number(systolicBP) || 0;
   const numDiastolic = Number(diastolicBP) || 0;
-  const bpDiag = getBloodPressureClassification(numSystolic, numDiastolic);
+  const bpDiag =
+    numSystolic > 0 && numDiastolic > 0
+      ? getBloodPressureClassification(numSystolic, numDiastolic)
+      : null;
 
   const numGlucose = Number(glucoseValue) || 0;
-  const glucoseDiag = getGlucoseClassification(numGlucose, glucoseType);
+  const glucoseDiag = numGlucose > 0 ? getGlucoseClassification(numGlucose, glucoseType) : null;
 
   const handleSaveEvaluation = async () => {
     const newEval = {
@@ -334,16 +368,38 @@ function PatientDetailPage() {
     }
   };
 
-  const handleUpdateQuestionTitle = (targetId: string, newTitle: string) => {
-    setCustomAnamnesisQuestions(
-      customAnamnesisQuestions.map((q) => (q.id === targetId ? { ...q, question: newTitle } : q)),
+  const handleUpdateQuestionTitle = async (targetId: string, newTitle: string) => {
+    const updatedList = customAnamnesisQuestions.map((q) =>
+      q.id === targetId ? { ...q, question: newTitle } : q,
     );
+    setCustomAnamnesisQuestions(updatedList);
+    try {
+      await updatePatientClinicalData({
+        data: {
+          patient_id: id,
+          customAnamnesisQuestions: updatedList,
+        },
+      });
+    } catch {
+      // Auto-save no background
+    }
   };
 
-  const handleUpdateQuestionAnswer = (targetId: string, newAnswer: string) => {
-    setCustomAnamnesisQuestions(
-      customAnamnesisQuestions.map((q) => (q.id === targetId ? { ...q, answer: newAnswer } : q)),
+  const handleUpdateQuestionAnswer = async (targetId: string, newAnswer: string) => {
+    const updatedList = customAnamnesisQuestions.map((q) =>
+      q.id === targetId ? { ...q, answer: newAnswer } : q,
     );
+    setCustomAnamnesisQuestions(updatedList);
+    try {
+      await updatePatientClinicalData({
+        data: {
+          patient_id: id,
+          customAnamnesisQuestions: updatedList,
+        },
+      });
+    } catch {
+      // Auto-save no background
+    }
   };
 
   const handleDeleteQuestion = async (targetId: string) => {
@@ -621,23 +677,22 @@ function PatientDetailPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           {(() => {
-            const notesText = patient?.notes || "";
-            const isDependente = notesText.toLowerCase().includes("dependente");
-            const isComerciario =
-              notesText.toLowerCase().includes("comerciário") ||
-              (!isDependente && !notesText.toLowerCase().includes("público geral"));
-
-            const catBadge = isDependente
-              ? {
-                  text: "Dependente de Comerciário",
-                  color: "bg-emerald-100 text-emerald-900 border-emerald-200",
-                }
-              : isComerciario
-                ? { text: "Comerciário", color: "bg-blue-100 text-[#003366] border-blue-200" }
-                : {
-                    text: "Público Geral",
-                    color: "bg-slate-100 text-slate-800 border-slate-200",
-                  };
+            const rawCat = patient?.category;
+            const catBadge =
+              rawCat === "dependente"
+                ? {
+                    text: "Dependente de Comerciário",
+                    color: "bg-emerald-100 text-emerald-900 border-emerald-200",
+                  }
+                : rawCat === "publico_geral"
+                  ? {
+                      text: "Público Geral",
+                      color: "bg-slate-100 text-slate-800 border-slate-200",
+                    }
+                  : {
+                      text: "Comerciário",
+                      color: "bg-blue-100 text-[#003366] border-blue-200",
+                    };
 
             return (
               <div className="flex flex-wrap items-center gap-2">
@@ -935,13 +990,17 @@ function PatientDetailPage() {
                   <div>
                     <span className="font-bold text-slate-600 block">PRESSÃO ARTERIAL (PA):</span>
                     <span className="text-[#003366] font-bold">
-                      {systolicBP}/{diastolicBP} mmHg ({bpDiag?.status || "Normal"})
+                      {systolicBP && diastolicBP
+                        ? `${systolicBP}/${diastolicBP} mmHg (${bpDiag?.status || "Não informado"})`
+                        : "Não informado"}
                     </span>
                   </div>
                   <div>
                     <span className="font-bold text-slate-600 block">GLICEMIA CAPILAR:</span>
                     <span className="text-[#003366] font-bold">
-                      {glucoseValue} mg/dL ({glucoseDiag?.status || "Normoglicemia"})
+                      {glucoseValue
+                        ? `${glucoseValue} mg/dL (${glucoseDiag?.status || "Não informado"})`
+                        : "Não informado"}
                     </span>
                   </div>
                 </div>
@@ -1464,18 +1523,18 @@ function PatientDetailPage() {
                         </td>
                         <td className="px-4 py-3">
                           <span className="font-extrabold text-[#003366]">
-                            {item.pa || "120/80 mmHg"}
+                            {item.pa || "Não informado"}
                           </span>
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded block w-fit mt-0.5">
-                            {item.paStatus || "Normal"}
+                          <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded block w-fit mt-0.5">
+                            {item.paStatus || "Não informado"}
                           </span>
                         </td>
                         <td className="px-4 py-3">
                           <span className="font-extrabold text-[#003366]">
-                            {item.glicemia || "92 mg/dL"}
+                            {item.glicemia || "Não informado"}
                           </span>
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded block w-fit mt-0.5">
-                            {item.glicemiaStatus || "Normoglicemia"}
+                          <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded block w-fit mt-0.5">
+                            {item.glicemiaStatus || "Não informado"}
                           </span>
                         </td>
                         <td className="px-4 py-3">{item.waist}</td>

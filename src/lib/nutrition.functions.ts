@@ -1770,6 +1770,7 @@ export const updatePatientClinicalData = createServerFn({ method: "POST" })
       ...(data.leftThigh !== undefined && { leftThigh: data.leftThigh }),
       ...(data.bodyFat !== undefined && { bodyFat: data.bodyFat }),
       ...(data.systolicBP !== undefined && { systolicBP: data.systolicBP }),
+      ...(data.diastolicBP !== undefined && { diastolicBP: data.diastolicBP }),
       ...(data.glucoseValue !== undefined && { glucoseValue: data.glucoseValue }),
       ...(data.glucoseType !== undefined && { glucoseType: data.glucoseType }),
       ...(data.clinicalHistory !== undefined && { clinicalHistory: data.clinicalHistory }),
